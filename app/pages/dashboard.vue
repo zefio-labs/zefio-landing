@@ -6,13 +6,14 @@
       <div class="w-[400px] h-[400px] bg-emerald-600/5 rounded-full blur-[100px] absolute -bottom-20 -right-20"></div>
     </div>
 
-    <header class="bg-[#030712]/70 backdrop-blur-xl border-b border-white/5 px-8 py-4 flex justify-between items-center sticky top-0 z-40 relative">
-      <div class="flex items-center gap-8">
+    <header class="bg-[#030712]/70 backdrop-blur-xl border-b border-white/5 px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sticky top-0 z-40 relative">
+      
+      <div class="flex justify-between items-center w-full md:w-auto">
         <div>
           <NuxtLink to="/" class="text-xs font-bold text-slate-500 hover:text-blue-400 transition mb-1 inline-block">
             ← Back to Home
           </NuxtLink>
-          <h1 class="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+          <h1 class="text-xl md:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
             <div class="p-1 bg-blue-500/10 rounded-lg border border-blue-500/20">
               <Icon name="ph:hexagon-fill" class="w-5 h-5 text-blue-400" />
             </div>
@@ -20,25 +21,37 @@
           </h1>
         </div>
 
-        <div class="hidden md:flex bg-white/5 p-1 rounded-xl border border-white/10 ml-4 mt-2 backdrop-blur-md shadow-inner">
-          <button 
-            @click="activeTab = 'architect'"
-            :class="activeTab === 'architect' ? 'bg-white/10 shadow-lg text-blue-400 font-bold border border-white/10' : 'text-slate-400 hover:text-slate-200 font-medium border border-transparent'"
-            class="px-6 py-2 text-sm rounded-lg transition-all flex items-center gap-2"
-          >
-            <Icon name="ph:magic-wand-fill" class="w-4 h-4 drop-shadow-[0_0_5px_rgba(96,165,250,0.5)]" /> AI Architect
-          </button>
-          <button 
-            @click="activeTab = 'telemetry'"
-            :class="activeTab === 'telemetry' ? 'bg-white/10 shadow-lg text-emerald-400 font-bold border border-white/10' : 'text-slate-400 hover:text-slate-200 font-medium border border-transparent'"
-            class="px-6 py-2 text-sm rounded-lg transition-all flex items-center gap-2"
-          >
-            <Icon name="ph:activity-fill" class="w-4 h-4 drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]" /> Live Telemetry
-          </button>
+        <div class="flex md:hidden items-center gap-2 px-3 py-1.5 bg-white/5 backdrop-blur-md rounded-full border border-white/10 shadow-lg">
+          <span class="relative flex h-2.5 w-2.5">
+            <span :class="(wsConnected && store.activeNodes?.length > 0) ? 'bg-emerald-400 animate-ping' : (wsConnected ? 'bg-amber-400 animate-pulse' : 'bg-rose-400')" class="absolute inline-flex h-full w-full rounded-full opacity-75"></span>
+            <span :class="(wsConnected && store.activeNodes?.length > 0) ? 'bg-emerald-500' : (wsConnected ? 'bg-amber-500' : 'bg-rose-500')" class="relative inline-flex rounded-full h-2.5 w-2.5"></span>
+          </span>
+          <span class="text-[10px] font-bold text-slate-300 leading-none">
+            {{ !wsConnected ? 'Offline' : (store.activeNodes?.length > 0 ? 'Online' : 'Awaiting') }}
+          </span>
         </div>
       </div>
 
-      <div class="flex items-center gap-3 px-4 py-2 bg-white/5 backdrop-blur-md rounded-full border border-white/10 shadow-lg">
+      <div class="flex w-full md:w-auto bg-white/5 p-1 rounded-xl border border-white/10 backdrop-blur-md shadow-inner order-last md:order-none">
+        <button 
+          @click="activeTab = 'architect'"
+          :class="activeTab === 'architect' ? 'bg-white/10 shadow-lg text-blue-400 font-bold border border-white/10' : 'text-slate-400 hover:text-slate-200 font-medium border border-transparent'"
+          class="flex-1 md:flex-none justify-center px-4 md:px-6 py-2 text-xs md:text-sm rounded-lg transition-all flex items-center gap-1.5 md:gap-2"
+        >
+          <Icon name="ph:magic-wand-fill" class="w-4 h-4 drop-shadow-[0_0_5px_rgba(96,165,250,0.5)]" /> 
+          <span class="truncate">AI Architect</span>
+        </button>
+        <button 
+          @click="activeTab = 'telemetry'"
+          :class="activeTab === 'telemetry' ? 'bg-white/10 shadow-lg text-emerald-400 font-bold border border-white/10' : 'text-slate-400 hover:text-slate-200 font-medium border border-transparent'"
+          class="flex-1 md:flex-none justify-center px-4 md:px-6 py-2 text-xs md:text-sm rounded-lg transition-all flex items-center gap-1.5 md:gap-2"
+        >
+          <Icon name="ph:activity-fill" class="w-4 h-4 drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]" /> 
+          <span class="truncate">Live Telemetry</span>
+        </button>
+      </div>
+
+      <div class="hidden md:flex items-center gap-3 px-4 py-2 bg-white/5 backdrop-blur-md rounded-full border border-white/10 shadow-lg">
         <span class="relative flex h-3 w-3">
           <span :class="(wsConnected && store.activeNodes?.length > 0) ? 'bg-emerald-400 animate-ping' : (wsConnected ? 'bg-amber-400 animate-pulse' : 'bg-rose-400')" class="absolute inline-flex h-full w-full rounded-full opacity-75"></span>
           <span :class="(wsConnected && store.activeNodes?.length > 0) ? 'bg-emerald-500' : (wsConnected ? 'bg-amber-500' : 'bg-rose-500')" class="relative inline-flex rounded-full h-3 w-3"></span>
@@ -54,7 +67,7 @@
       </div>
     </header>
 
-    <main class="flex-1 p-8 overflow-y-auto relative z-10">
+    <main class="flex-1 p-4 md:p-8 overflow-y-auto relative z-10">
       <DashboardAiArchitectTab 
         v-show="activeTab === 'architect'" 
         @deploy-success="activeTab = 'telemetry'" 
@@ -72,10 +85,10 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useDashboardStore } from '~/stores/dashboard'
 
-// 탭 상태 관리 (초기값: architect 로 설정하여 플로우 설계부터 진입)
+// Tab state management (Default: 'architect' for flow design)
 const activeTab = ref<'architect' | 'telemetry'>('architect')
 
-// 웹소켓을 통한 글로벌 상태 관리 로직
+// Global state management via WebSocket
 const store = useDashboardStore()
 const wsConnected = ref(false)
 let ws: WebSocket | null = null
@@ -86,18 +99,19 @@ const initWebSocket = () => {
 
   ws.onopen = () => { 
     wsConnected.value = true 
-    // 서버에 자신이 UI 대시보드임을 알리고 구독 시작!
+    // Notify the server that this is the UI dashboard and start subscription
     ws?.send(JSON.stringify({ type: 'ui_subscribe' }))
   }
+  
   ws.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data)
       
-      // 서버에서 보낸 클러스터 지표 데이터일 경우
+      // When receiving cluster telemetry data from the server
       if (data.type === 'telemetry') {
         console.log('[Vue UI] Received Telemetry:', data.payload) 
         
-        // Pinia 스토어 업데이트
+        // Update Pinia store
         store.updateTelemetry(data)
       } 
       else if (data.type === 'sys') {
@@ -107,8 +121,10 @@ const initWebSocket = () => {
       console.error('WS parse error:', e)
     }
   }
+  
   ws.onclose = () => {
     wsConnected.value = false
+    // Auto-reconnect after 5 seconds
     setTimeout(initWebSocket, 5000)
   }
 }
