@@ -87,6 +87,10 @@ The application uses environment variables to dynamically connect to the Zefio E
 * `OLLAMA_BASE_URL`: (Optional) The base URL for a local Ollama instance if using local models as a fallback.
 * `OLLAMA_MODEL`: (Optional) The specific Ollama model to use (e.g., `gemma4:e4b`).
 
+> **💡 Note on AI Providers & Rate Limits** > The current public beta utilizes the free tiers of Google Gemini and OpenAI for the AI-Powered Pipeline Designer, which may be subject to temporary rate limits or daily API quota restrictions.
+> 
+> **Future Roadmap:** We are planning to expand our server infrastructure in the near future to fully host and transition to a local **Ollama** instance. This will allow for unlimited, fully private, and offline AI pipeline generation without relying on external API constraints.
+
 ---
 
 ## Project Structure
