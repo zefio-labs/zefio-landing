@@ -6,6 +6,16 @@ The `zefio-landing` project serves as the **Control Plane (CP) Web Interface and
 
 ---
 
+## 🚀 Live Demo
+
+Experience the Zefio Console in action through our live demonstration environment:
+
+🔗 **[Zefio Console Live Demo](http://zefio.e000.bond/)**
+
+> **Note:** The current domain (`zefio.e000.bond`) is for public beta demonstration purposes. Please be aware that this URL may be updated or migrated to a permanent official domain in the future.
+
+---
+
 ## Key Features
 
 * **Real-Time Cluster Telemetry:** Monitor distributed Data Plane (DP) nodes in real-time. View JVM stats, TPS, SEDA stage pools, and connection pools across heterogeneous environments (e.g., Local Desktop + Raspberry Pi) via WebSockets and Redis Pub/Sub.
