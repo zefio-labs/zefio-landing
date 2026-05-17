@@ -6,6 +6,16 @@ The `zefio-landing` project serves as the **Control Plane (CP) Web Interface and
 
 ---
 
+## 🚀 Live Demo
+
+Experience the Zefio Console in action through our live demonstration environment:
+
+🔗 **[Zefio Console Live Demo](http://zefio.e000.bond/)**
+
+> **Note:** The current domain (`zefio.e000.bond`) is for public beta demonstration purposes. Please be aware that this URL may be updated or migrated to a permanent official domain in the future.
+
+---
+
 ## Key Features
 
 * **Real-Time Cluster Telemetry:** Monitor distributed Data Plane (DP) nodes in real-time. View JVM stats, TPS, SEDA stage pools, and connection pools across heterogeneous environments (e.g., Local Desktop + Raspberry Pi) via WebSockets and Redis Pub/Sub.
@@ -76,6 +86,10 @@ The application uses environment variables to dynamically connect to the Zefio E
 * `OPENAI_API_KEY`: Your OpenAI API key.
 * `OLLAMA_BASE_URL`: (Optional) The base URL for a local Ollama instance if using local models as a fallback.
 * `OLLAMA_MODEL`: (Optional) The specific Ollama model to use (e.g., `gemma4:e4b`).
+
+> **💡 Note on AI Providers & Rate Limits** > The current public beta utilizes the free tiers of Google Gemini and OpenAI for the AI-Powered Pipeline Designer, which may be subject to temporary rate limits or daily API quota restrictions.
+> 
+> **Future Roadmap:** We are planning to expand our server infrastructure in the near future to fully host and transition to a local **Ollama** instance. This will allow for unlimited, fully private, and offline AI pipeline generation without relying on external API constraints.
 
 ---
 
