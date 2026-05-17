@@ -1,0 +1,42 @@
+- name: error1
+  type: FixedFaultHandler
+  config:
+    errorCodeRules:
+      - errorCode: "E123"
+        offset: 5
+        newCode: "ABC"
+    valueOverrides:
+      - offset: 0
+        value: "XXXX"
+    messageRule:
+      offset: 10
+      mode: "ERROR"
+    requestEncoding: "utf-8"
+
+- name: error2
+  type: FixedFaultHandler
+  config:
+    errorCodeRules:
+      - errorCode: "x"
+        offset: 7
+        newCode: "ZZZ"
+    valueOverrides:
+      - offset: 0
+        value: "ABCD"
+    messageRule:
+      offset: 10
+      mode: "ERROR"
+    requestEncoding: "utf-8"
+
+- name: error3
+  type: FixedFaultHandler
+  config:
+    errorCodeRules:
+      - errorCode: "x"
+        offset: 0
+        newCode: "AAA"
+    valueOverrides:
+      - offset: 0
+        value: "ZZZ"
+    # messageRule 생략 → default: error 전문을 전문 뒤에 append
+    requestEncoding: "utf-8"

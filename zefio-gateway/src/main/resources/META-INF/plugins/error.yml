@@ -1,0 +1,13 @@
+modules:
+  - name: FixedFaultHandler
+    type: faultHandler
+    className: io.zefio.gateway.error.StructuredFaultHandler
+    dtoClassName: io.zefio.gateway.error.dto.FixedFaultValues
+  - name: JsonFaultHandler
+    type: faultHandler
+    className: io.zefio.gateway.error.StructuredFaultHandler
+    dtoClassName: io.zefio.gateway.error.dto.JsonFaultValues
+  - name: XmlFaultHandler
+    type: faultHandler
+    className: io.zefio.gateway.error.StructuredFaultHandler
+    dtoClassName: io.zefio.gateway.error.dto.XmlFaultValues

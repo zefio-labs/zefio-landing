@@ -1,0 +1,50 @@
+flows:
+  - name: inbound
+    label: "1번_TCP_동기_대량중계"
+    options:
+      threadPool:
+        corePoolSize: 200
+        maxPoolSize: 400
+        queueCapacity: 0
+        autoScaling:
+          enabled: true
+          threshold: 0.7
+          checkInterval: 5
+          scaleUpStep: 30
+          scaleDownStep: 10
+      cpuQueue:
+        capacity: 50000
+      ioQueue:
+        capacity: 20000
+
+    # 🎯 구성도 Left: sync plain (TCP + Fixed 전문 + Sync 프로필)
+    ingress:
+      name: from
+      label: "소스 수신(51001)"
+      type: TcpIngress
+      telegram: fixed-standard
+      profile: ingress-sync
+      exchangePattern: RequestReply
+      config:
+        port: 51001
+        requestEncoding: utf-8
+        responseEncoding: utf-8
+
+    # 🎯 구성도 Right: sync plain (TCP + Fixed 전문 + Sync Massive 프로필)
+    steps:
+      - name: to
+        label: "타겟 요청(TCP)"
+        type: TcpUpstream
+        telegram: fixed-standard
+        profile: upstream-sync-massive
+        exchangePattern: RequestReply
+        retry:
+          enabled: false
+        config:
+          host: 192.168.3.218
+          port: 51101
+          requestEncoding: utf-8
+          responseEncoding: utf-8
+    on-error:
+      - error-type: ANY
+        refErrorHandler: fixederror

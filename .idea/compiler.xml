@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="zefio-gateway" />
+        <module name="zefio-test-support" />
+        <module name="zefio-core" />
+        <module name="zefio-launcher" />
+        <module name="zefio-jdk-v1.8" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="zefio-api" target="1.8" />
+      <module name="zefio-cloud-filesystem" target="21" />
+      <module name="zefio-cloud-storage-aws" target="21" />
+      <module name="zefio-cloud-storage-gcs" target="21" />
+      <module name="zefio-cloud-storage-ozone" target="21" />
+      <module name="zefio-common" target="21" />
+      <module name="zefio-connectors-cloud" target="21" />
+      <module name="zefio-data-ehcache" target="21" />
+      <module name="zefio-data-file" target="21" />
+      <module name="zefio-data-ftp" target="21" />
+      <module name="zefio-data-jdbc" target="21" />
+      <module name="zefio-data-quartz" target="21" />
+      <module name="zefio-data-redis" target="21" />
+      <module name="zefio-data-sftp" target="21" />
+      <module name="zefio-ehcache" target="21" />
+      <module name="zefio-error" target="21" />
+      <module name="zefio-file" target="21" />
+      <module name="zefio-file-transfer" target="1.8" />
+      <module name="zefio-filter" target="21" />
+      <module name="zefio-frontend" target="1.8" />
+      <module name="zefio-ftp" target="1.8" />
+      <module name="zefio-http" target="21" />
+      <module name="zefio-jdbc" target="21" />
+      <module name="zefio-jdk-v21" target="21" />
+      <module name="zefio-legacy-tmax" target="21" />
+      <module name="zefio-legacy-tuxedo" target="21" />
+      <module name="zefio-legacy-weblogic" target="21" />
+      <module name="zefio-messaging-activemq" target="21" />
+      <module name="zefio-messaging-ibmmq" target="21" />
+      <module name="zefio-messaging-kafka" target="21" />
+      <module name="zefio-messaging-nats" target="21" />
+      <module name="zefio-messaging-rabbitmq" target="21" />
+      <module name="zefio-netty" target="21" />
+      <module name="zefio-payload" target="21" />
+      <module name="zefio-quartz" target="21" />
+      <module name="zefio-redis" target="21" />
+      <module name="zefio-schema" target="21" />
+      <module name="zefio-security-crypto" target="21" />
+      <module name="zefio-sftp" target="1.8" />
+      <module name="zefio-tcp" target="21" />
+      <module name="zefio-telemetry" target="21" />
+      <module name="zefio-transform" target="21" />
+      <module name="zefio-websocket" target="21" />
+    </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="zefio-api" options="-Xlint:-options" />
+      <module name="zefio-cloud-filesystem" options="-Xlint:-options" />
+      <module name="zefio-cloud-storage-aws" options="-Xlint:-options" />
+      <module name="zefio-cloud-storage-gcs" options="-Xlint:-options" />
+      <module name="zefio-cloud-storage-ozone" options="-Xlint:-options" />
+      <module name="zefio-common" options="-Xlint:-options" />
+      <module name="zefio-connectors-cloud" options="-Xlint:-options" />
+      <module name="zefio-core" options="-Xlint:-options" />
+      <module name="zefio-data" options="-Xlint:-options" />
+      <module name="zefio-data-ehcache" options="-Xlint:-options" />
+      <module name="zefio-data-file" options="-Xlint:-options" />
+      <module name="zefio-data-ftp" options="-Xlint:-options" />
+      <module name="zefio-data-jdbc" options="-Xlint:-options" />
+      <module name="zefio-data-quartz" options="-Xlint:-options" />
+      <module name="zefio-data-redis" options="-Xlint:-options" />
+      <module name="zefio-data-sftp" options="-Xlint:-options" />
+      <module name="zefio-ehcache" options="-Xlint:-options" />
+      <module name="zefio-engine" options="-Xlint:-options" />
+      <module name="zefio-enterprise" options="-Xlint:-options" />
+      <module name="zefio-error" options="-Xlint:-options" />
+      <module name="zefio-file" options="-Xlint:-options" />
+      <module name="zefio-file-transfer" options="-Xlint:-options" />
+      <module name="zefio-filter" options="-Xlint:-options" />
+      <module name="zefio-frontend" options="-Xlint:-options" />
+      <module name="zefio-ftp" options="-Xlint:-options" />
+      <module name="zefio-gateway" options="-Xlint:-options" />
+      <module name="zefio-http" options="-Xlint:-options" />
+      <module name="zefio-jdbc" options="-Xlint:-options" />
+      <module name="zefio-jdk-v1.8" options="-Xlint:-options" />
+      <module name="zefio-jdk-v21" options="-Xlint:-options" />
+      <module name="zefio-launcher" options="-Xlint:-options" />
+      <module name="zefio-legacy-tmax" options="-Xlint:-options" />
+      <module name="zefio-legacy-tuxedo" options="-Xlint:-options" />
+      <module name="zefio-legacy-weblogic" options="-Xlint:-options" />
+      <module name="zefio-messaging-activemq" options="-Xlint:-options" />
+      <module name="zefio-messaging-ibmmq" options="-Xlint:-options" />
+      <module name="zefio-messaging-kafka" options="-Xlint:-options" />
+      <module name="zefio-messaging-nats" options="-Xlint:-options" />
+      <module name="zefio-messaging-rabbitmq" options="-Xlint:-options" />
+      <module name="zefio-netty" options="-Xlint:-options" />
+      <module name="zefio-payload" options="-Xlint:-options" />
+      <module name="zefio-quartz" options="-Xlint:-options" />
+      <module name="zefio-redis" options="-Xlint:-options" />
+      <module name="zefio-schema" options="-Xlint:-options" />
+      <module name="zefio-security-crypto" options="-Xlint:-options" />
+      <module name="zefio-sftp" options="-Xlint:-options" />
+      <module name="zefio-support" options="-Xlint:-options" />
+      <module name="zefio-tcp" options="-Xlint:-options" />
+      <module name="zefio-telemetry" options="-Xlint:-options" />
+      <module name="zefio-test-support" options="-Xlint:-options" />
+      <module name="zefio-transform" options="-Xlint:-options" />
+      <module name="zefio-websocket" options="-Xlint:-options" />
+    </option>
+  </component>
+</project>

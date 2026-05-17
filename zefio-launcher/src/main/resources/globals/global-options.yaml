@@ -1,0 +1,10 @@
+global-options:
+  default-retry:
+    enabled: false
+    maxRetries: 3
+    delay: 1000
+  sync-bridge:
+    max-capacity: 50000
+    expire-seconds: 60
+  exception-policy:
+    overrides: { }

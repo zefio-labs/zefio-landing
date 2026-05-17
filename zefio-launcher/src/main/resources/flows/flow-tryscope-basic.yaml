@@ -1,0 +1,79 @@
+# ==============================================================================
+# 파일명: flows/flow-tryscope-basic.yaml
+# 설  명: [v2.6] TRY_SCOPE 단일 동작 및 FALLBACK 복구 검증 플로우
+# ==============================================================================
+flows:
+  - name: tryscope-basic-flow
+    label: "TRY_SCOPE 단일 검증 플로우"
+    options:
+      threadPool:
+        corePoolSize: 10
+        maxPoolSize: 20
+        queueCapacity: 50
+
+    ingress:
+      name: from-client-tryscope-51004
+      label: "HTTP 클라이언트 수신"
+      type: HttpIngress
+      telegram: fixed-http-req
+      profile: ingress-sync-alt
+      exchangePattern: RequestReply
+      config:
+        keepAlive: false
+        port: 51004
+        requestEncoding: utf-8
+        responseEncoding: utf-8
+        responseContentType: text/plain
+        responseMatchingType: session
+        readTimeout: 50000
+        transactionTimeoutMillis: 40000
+
+    steps:
+      - name: basic-try-scope
+        type: TRY_SCOPE
+        label: "단일 TRY_SCOPE 테스트"
+
+        # 🔄 [시간의 축] 재시도 설정 (기본은 꺼둠, 필요 시 true로 변경)
+        retry:
+          enabled: false   # 🚀 [핵심] 재시도 활성화 여부를 명시적으로 제어
+          maxRetries: 3
+          delay: 500
+
+        # 🛡️ [공간의 축] 에러 제어 정책
+        # FALLBACK: 에러 발생 시 아래 정의된 fallback-steps를 실행하고 정상 흐름으로 복구함
+        on-error: FALLBACK
+
+        # 🏃 [정상 경로] 메인 비즈니스 로직
+        steps:
+          # 🔥 1. 의도적으로 에러를 발생시키는 스텝
+          - name: force-error-step
+            type: SpELValidatorInterceptor
+            config:
+              condition: "#{false}"
+              errorMessage: "Forced Error for TryScope Test"
+              errorStatus: "VALIDATION_FAILED"
+
+        # 🚑 [우회 경로] 에러 발생 시 실행되는 플랜 B (기존 action: CONTINUE 대체)
+        fallback-steps:
+          # 2. 에러 발생 사실을 기록
+          - name: fallback-log
+            type: LoggingInterceptor
+            config: { }
+
+          # ✅ 3. 클라이언트가 죽지 않도록 정상 규격으로 데이터 복원
+          - name: fallback-restore-format
+            type: SpELModifierInterceptor
+            config:
+              assignments:
+                # 💡 [핵심] 안전한 SpEL 리터럴 포맷(#{''}) 사용
+                - target: "body['PREFIX']"
+                  expression: "#{'RES'}"
+                - target: "body['TARGET_VAL']"
+                  expression: "#{'FBK'}"
+                - target: "body['GLOBAL_TRX_ID']"
+                  expression: "#{payload.trxID}"
+
+    # 💥 최상단 글로벌 에러 핸들러 (TryScope 밖에서 터지는 예외 방어)
+    on-error:
+      - error-type: ANY
+        refErrorHandler: fixederror

@@ -1,0 +1,9 @@
+modules:
+  - name: TcpIngress
+    type: ingress
+    className: io.zefio.gateway.tcp.TcpIngress
+    dtoClassName: io.zefio.gateway.tcp.dto.TcpIngressValues
+  - name: TcpUpstream
+    type: upstream
+    className: io.zefio.gateway.tcp.TcpUpstream
+    dtoClassName: io.zefio.gateway.tcp.dto.TcpUpstreamValues

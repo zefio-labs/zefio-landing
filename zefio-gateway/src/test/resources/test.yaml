@@ -1,0 +1,607 @@
+- name: tcpInbound_encoding
+  type: TcpIngress
+  config:
+    port: 39990
+    requestEncoding: US-ASCII   # 또는 US-ASCII 등
+    responseEncoding: US-ASCII
+    readTimeout: 0
+    transactionTimeoutMillis: 11000
+    # --------------------------------------------------------------------------
+    # Response Matching Strategy Configuration
+    # - none: Fire-and-Forget mode (Async, No response expected)
+    # - session: Matches response using Network Session (Channel ID + Remote Address)
+    # - telegram: Matches response using a Correlation Key within the message body
+    # --------------------------------------------------------------------------
+    responseMatchingType: telegram
+    keepAlive: true
+
+- name: tcpOutbound_encoding
+  type: TcpUpstream
+  config:
+    host: 127.0.0.1
+    port: 39990
+    requestEncoding: US-ASCII   # 인코딩을 문자열로 지정
+    responseEncoding: US-ASCII
+    transactionTimeoutMillis: 5000
+    # --------------------------------------------------------------------------
+    # Response Matching Strategy Configuration
+    # - none: Fire-and-Forget mode (Async, No response expected)
+    # - session: Matches response using Network Session (Channel ID + Remote Address)
+    # - telegram: Matches response using a Correlation Key within the message body
+    # --------------------------------------------------------------------------
+    responseMatchingType: telegram
+
+- name: tcpInbound_fixed
+  type: TcpIngress
+  config:
+    port: 9991
+    requestEncoding: UTF-8
+    responseEncoding: UTF-8
+    readTimeout: 5000
+    transactionTimeoutMillis: 4000
+    # --------------------------------------------------------------------------
+    # Response Matching Strategy Configuration
+    # - none: Fire-and-Forget mode (Async, No response expected)
+    # - session: Matches response using Network Session (Channel ID + Remote Address)
+    # - telegram: Matches response using a Correlation Key within the message body
+    # --------------------------------------------------------------------------
+    responseMatchingType: telegram
+    keepAlive: true
+    handler:
+
+- name: tcpOutbound_fixed
+  type: TcpUpstream
+  config:
+    host: 127.0.0.1
+    port: 9991
+    requestEncoding: UTF-8
+    responseEncoding: UTF-8
+    transactionTimeoutMillis: 5000
+    # --------------------------------------------------------------------------
+    # Response Matching Strategy Configuration
+    # - none: Fire-and-Forget mode (Async, No response expected)
+    # - session: Matches response using Network Session (Channel ID + Remote Address)
+    # - telegram: Matches response using a Correlation Key within the message body
+    # --------------------------------------------------------------------------
+    responseMatchingType: telegram
+
+- name: tcpInbound_json
+  type: TcpIngress
+  config:
+    port: 9992
+    requestEncoding: UTF-8
+    responseEncoding: UTF-8
+    readTimeout: 5000
+    transactionTimeoutMillis: 4000
+    # --------------------------------------------------------------------------
+    # Response Matching Strategy Configuration
+    # - none: Fire-and-Forget mode (Async, No response expected)
+    # - session: Matches response using Network Session (Channel ID + Remote Address)
+    # - telegram: Matches response using a Correlation Key within the message body
+    # --------------------------------------------------------------------------
+    responseMatchingType: telegram
+    keepAlive: true
+
+- name: tcpOutbound_json
+  type: TcpUpstream
+  config:
+    host: 127.0.0.1
+    port: 9992
+    requestEncoding: UTF-8
+    responseEncoding: UTF-8
+    transactionTimeoutMillis: 5000
+    # --------------------------------------------------------------------------
+    # Response Matching Strategy Configuration
+    # - none: Fire-and-Forget mode (Async, No response expected)
+    # - session: Matches response using Network Session (Channel ID + Remote Address)
+    # - telegram: Matches response using a Correlation Key within the message body
+    # --------------------------------------------------------------------------
+    responseMatchingType: telegram
+
+- name: tcpInbound_xml
+  type: TcpIngress
+  config:
+    port: 9993
+    requestEncoding: UTF-8
+    responseEncoding: UTF-8
+    readTimeout: 5000
+    transactionTimeoutMillis: 4000
+    # --------------------------------------------------------------------------
+    # Response Matching Strategy Configuration
+    # - none: Fire-and-Forget mode (Async, No response expected)
+    # - session: Matches response using Network Session (Channel ID + Remote Address)
+    # - telegram: Matches response using a Correlation Key within the message body
+    # --------------------------------------------------------------------------
+    responseMatchingType: telegram
+    keepAlive: true
+
+- name: tcpOutbound_xml
+  type: TcpUpstream
+  config:
+    host: 127.0.0.1
+    port: 9993
+    requestEncoding: UTF-8
+    responseEncoding: UTF-8
+    transactionTimeoutMillis: 5000
+    # --------------------------------------------------------------------------
+    # Response Matching Strategy Configuration
+    # - none: Fire-and-Forget mode (Async, No response expected)
+    # - session: Matches response using Network Session (Channel ID + Remote Address)
+    # - telegram: Matches response using a Correlation Key within the message body
+    # --------------------------------------------------------------------------
+    responseMatchingType: telegram
+
+- name: httpInbound_multipart
+  type: HttpIngress
+  config:
+    port: 53008
+    requestEncoding: "utf-8"
+    responseEncoding: "utf-8"
+    responseContentType: multipart/form-data
+    readTimeout: 5000
+    transactionTimeoutMillis: 4000
+    responseMatchingType: telegram
+
+- name: httpOutbound_multipart
+  type: HttpUpstream
+  config:
+    host: "127.0.0.1"
+    port: 53008
+    requestPath: "upload"
+    responseMatchingType: telegram
+    requestContentType: multipart/form-data
+    requestHttpMethod: "POST"
+    requestQueryParams: ""
+    requestHeaderKeyconfig: "zefio-gid:{{hostname}}-T_CRE_PIE_RQ_QUE"
+    requestEncoding: "utf-8"
+    responseEncoding: "utf-8"
+    transactionTimeoutMillis: 10000
+
+- name: httpInbound_fixed
+  type: HttpIngress
+  config:
+    port: 53007
+    requestEncoding: "utf-8"
+    responseEncoding: "utf-8"
+    responseContentType: "text/plain"     # MediaType.TEXT_PLAIN.toString()
+    readTimeout: 5000                     # in milliseconds
+    transactionTimeoutMillis: 4000        # in milliseconds
+    responseMatchingType: telegram
+
+- name: httpOutbound_fixed
+  type: HttpUpstream
+  config:
+    host: "127.0.0.1"
+    port: 53007
+    requestPath: "0-8,echo"               # "/echo{TXN_ID}" 방식
+    responseMatchingType: telegram
+    requestContentType: "text/plain"      # MediaType.TEXT_PLAIN.toString()
+    requestAccept: "text/plain"
+    requestHttpMethod: "POST"
+    requestQueryParams: ""
+    requestHeaderKeyconfig: "zefio-gid:{{hostname}}-{{CorrelationID}}"
+    requestEncoding: "utf-8"
+    responseEncoding: "utf-8"
+    transactionTimeoutMillis: 5000
+
+- name: httpInbound_json
+  type: HttpIngress
+  config:
+    port: 53017
+    requestEncoding: "utf-8"
+    responseEncoding: "utf-8"
+    responseContentType: "application/json"     # MediaType.APPLICATION_JSON.toString()
+    readTimeout: 5000                     # in milliseconds
+    transactionTimeoutMillis: 4000        # in milliseconds
+    responseMatchingType: telegram
+
+- name: httpOutbound_json
+  type: HttpUpstream
+  config:
+    host: "127.0.0.1"
+    port: 53017
+    requestPath: "0-8,echo"               # "/echo{TXN_ID}" 방식
+    responseMatchingType: telegram
+    requestContentType: "application/json"      # MediaType.APPLICATION_JSON.toString()
+    requestAccept: "application/json"
+    requestHttpMethod: "POST"
+    requestQueryParams: ""
+    requestHeaderKeyconfig: "zefio-gid:{{hostname}}-T_CRE_PIE_RQ_QUE"
+    requestEncoding: "utf-8"
+    responseEncoding: "utf-8"
+    transactionTimeoutMillis: 5000
+
+- name: httpInbound_xml
+  type: HttpIngress
+  config:
+    port: 53007
+    requestEncoding: "utf-8"                  # receiverEncoding.name()
+    responseEncoding: "utf-8"                 # senderEncoding.name()
+    responseContentType: "text/xml"
+    readTimeout: 5000
+    transactionTimeoutMillis: 4000
+    responseMatchingType: telegram
+
+- name: httpOutbound_xml
+  type: HttpUpstream
+  config:
+    host: "127.0.0.1"
+    port: 53007
+    requestPath: "0-8,echo"                    # "/echo{TXN_ID}" 요청 URL 구성
+    responseMatchingType: telegram
+    requestContentType: "text/xml"
+    requestAccept: "text/xml"
+    requestHttpMethod: "POST"
+    requestQueryParams: ""
+    requestHeaderKeyconfig: "zefio-gid:{{hostname}}-T_CRE_PIE_RQ_QUE"
+    requestEncoding: "utf-8"
+    responseEncoding: "utf-8"
+    transactionTimeoutMillis: 5000
+
+- name: httpsInbound_keystore
+  type: HttpsIngress
+  config:
+    port: 53007
+    requestEncoding: "utf-8"              # receiverEncoding.name()
+    responseEncoding: "utf-8"             # senderEncoding.name()
+    responseContentType: "text/plain"
+    readTimeout: 5000
+    transactionTimeoutMillis: 4000
+    responseMatchingType: telegram
+
+    ssl:
+      enable: "true"
+      protocol: "TLSv1.2"
+      keyStoreType: "PKCS12"
+      keyStore: "classpath:/keystore.p12"
+      keyPassword: "password"
+      trustStoreType: "PKCS12"
+      trustStore: "classpath:/truststore.p12"
+      trustPassword: "password"
+
+- name: httpsOutbound_keystore
+  type: HttpsUpstream
+  config:
+    host: "127.0.0.1"
+    port: 53007
+    requestPath: "0-8,echo"
+    responseMatchingType: telegram
+    requestContentType: "text/plain"
+    requestAccept: "text/plain"
+    requestHttpMethod: "POST"
+    requestQueryParams: ""
+    requestHeaderKeyconfig: "zefio-gid:{{hostname}}-T_CRE_PIE_RQ_QUE"
+    requestEncoding: "utf-8"
+    responseEncoding: "utf-8"
+    transactionTimeoutMillis: 5000
+
+    ssl:
+      enable: "true"
+      protocol: "TLSv1.2"
+      keyStoreType: "PKCS12"
+      keyStore: "classpath:/keystore.p12"
+      keyPassword: "password"
+      trustStoreType: "PKCS12"
+      trustStore: "classpath:/truststore.p12"
+      trustPassword: "password"
+
+- name: httpsInbound_pem
+  type: HttpsIngress
+  config:
+    port: 53008
+    requestEncoding: "euc-kr"               # receiverEncoding.name()
+    responseEncoding: "euc-kr"              # senderEncoding.name()
+    responseContentType: "text/plain"
+    readTimeout: 5000
+    transactionTimeoutMillis: 4000
+    responseMatchingType: telegram
+
+    ssl:
+      enable: "true"
+      protocol: "TLSv1.2"
+      certFilePath: "cert.pem"
+      privateKeyFilePath: "key.pem"
+
+- name: httpsOutbound_pem
+  type: HttpsUpstream
+  config:
+    host: "127.0.0.1"
+    port: 53008
+    requestPath: "0-8,echo"                  # "/echo{TXN_ID}" 경로 구성
+    responseMatchingType: telegram
+    requestContentType: "text/plain"
+    requestAccept: "text/plain"
+    requestHttpMethod: "POST"
+    requestQueryParams: ""
+    requestHeaderKeyconfig: "zefio-gid:{{hostname}}-T_CRE_PIE_RQ_QUE"
+    requestEncoding: "euc-kr"
+    responseEncoding: "euc-kr"
+    transactionTimeoutMillis: 5000
+
+    ssl:
+      enable: "true"
+      protocol: "TLSv1.2"
+      certFilePath: "cert.pem"
+      # privateKeyFilePath는 비활성화되어 있으므로 제외하거나 주석 처리 가능
+      # privateKeyFilePath: "key.pem"
+
+
+- name: httpInbound_keepalive
+  type: HttpIngress
+  config:
+    workThreadCount: 3
+    connectTimeout:
+    soKeepAlive:
+    tcpNoDelay:
+    soReUseAddr:
+    readTimeout: 50000
+    transactionTimeoutMillis: 40000
+    responseMatchingType: telegram
+    port: 53007
+    requestEncoding: utf-8
+    responseEncoding: utf-8
+    responseContentType: text/plain
+
+- name: httpOutbound_keepalive
+  type: HttpUpstream
+  config:
+    host: "127.0.0.1"
+    port: 53007
+    requestPath: "0-8,echo"                  # "/echo{TXN_ID}" 경로 구성
+    responseMatchingType: telegram
+    keepAlive: true
+    requestContentType: "text/plain"
+    requestAccept: "text/plain"
+    requestHttpMethod: "POST"
+    requestQueryParams: ""
+    requestHeaderKeyconfig:
+    requestEncoding: "euc-kr"
+    responseEncoding: "euc-kr"
+    transactionTimeoutMillis: 5000
+    poolMaxSize: 1
+    poolMaxWaitMillis:
+    poolReconnectIntervalMillis:
+
+- name: httpInbound_connectionHeader_test
+  type: HttpIngress
+  config:
+    port: 53007
+    workThreadCount: 4
+    readTimeout: 50000            # 서버가 데이터를 기다리는 시간
+    transactionTimeoutMillis: 40000 # 트랜잭션 타임아웃
+    responseMatchingType: telegram
+    requestEncoding: utf-8
+    responseEncoding: utf-8
+    responseContentType: "text/plain"
+    # 서버의 Idle Timeout (이 시간 동안 요청 없으면 연결 끊음)
+    soKeepAlive: true
+    tcpNoDelay: true
+
+- name: httpOutbound_connectionCloseHeader_test
+  type: HttpUpstream
+  config:
+    host: "127.0.0.1"
+    port: 53007
+    requestPath: "/test"
+    requestHttpMethod: "POST"
+    keepAlive: false # 기본값을 keep-alive로 설정
+    requestContentType: "text/plain"
+    requestHeaderKeyconfig:
+    requestEncoding: "utf-8"
+    responseEncoding: "utf-8"
+    transactionTimeoutMillis: 5000
+    responseMatchingType: telegram
+    # PoolingHttpClient를 사용하도록 설정되어 있어야 재사용 테스트가 가능합니다.
+    connectionTimeout: 2000
+
+- name: httpOutbound_connectionKeepAliveHeader_test
+  type: HttpUpstream
+  config:
+    host: "127.0.0.1"
+    port: 53007
+    requestPath: "/test"
+    requestHttpMethod: "POST"
+    keepAlive: true # 기본값을 keep-alive로 설정
+    requestContentType: "text/plain"
+    requestHeaderKeyconfig:
+    requestEncoding: "utf-8"
+    responseEncoding: "utf-8"
+    transactionTimeoutMillis: 5000
+    responseMatchingType: telegram
+    # PoolingHttpClient를 사용하도록 설정되어 있어야 재사용 테스트가 가능합니다.
+    connectionTimeout: 2000
+    poolMaxSize: 2
+    poolMaxWaitMillis:
+    poolReconnectIntervalMillis:
+
+- name: httpOutbound_error
+  type: HttpUpstream
+  config:
+    host: "127.0.0.1"
+    port: 8888
+    requestPath: "/test"
+    requestHttpMethod: "POST"
+    keepAlive: true # 기본값을 keep-alive로 설정
+    requestContentType: "text/plain"
+    requestHeaderKeyconfig:
+    requestEncoding: "utf-8"
+    responseEncoding: "utf-8"
+    transactionTimeoutMillis: 5000
+    responseMatchingType: telegram
+    # PoolingHttpClient를 사용하도록 설정되어 있어야 재사용 테스트가 가능합니다.
+    connectionTimeout: 2000
+    poolMaxSize: 2
+    poolMaxWaitMillis:
+    poolReconnectIntervalMillis:
+
+- name: WebSocketIngress_twoway_twoway
+  type: WebSocketIngress
+  config:
+    port: 9100
+    contextPath: /ws
+    handler: io.zefio.gateway.websocket.handler.WebSocketServerHandler
+    keepAlive: true
+    responseMatchingType: telegram
+    transactionTimeoutMillis: 50000
+    requestEncoding: UTF-8
+    responseEncoding: UTF-8
+
+- name: websocketOutbound_twoway_twoway
+  type: WebSocketUpstream
+  config:
+    host: localhost
+    port: 9100
+    uri: /ws
+    responseMatchingType: telegram
+    transactionTimeoutMillis: 50000
+    requestEncoding: UTF-8
+    responseEncoding: UTF-8
+
+- name: fixed-body-insert-1
+  type: FIXED_INSERT_FROM_PROPERTY
+  config:
+    direction: PROPERTY_TO_BODY
+    children:
+      - valueOrProperty: header
+        offset: 0
+
+- name: fixed-body-insert-2
+  type: FIXED_INSERT_FROM_PROPERTY
+  config:
+    direction: PROPERTY_TO_BODY
+    children:
+      - valueOrProperty: key1
+        offset: 0
+      - valueOrProperty: key2
+        offset: 3
+
+- name: fixed-body-insert-3
+  type: FIXED_INSERT_FROM_PROPERTY
+  config:
+    direction: PROPERTY_TO_BODY
+    children:
+      - valueOrProperty: key1
+        offset: 0
+      - valueOrProperty: key2
+        offset: 1
+
+- name: fixed-body-insert-4
+  type: FIXED_INSERT_FROM_PROPERTY
+  config:
+    direction: PROPERTY_TO_BODY
+    children:
+      - valueOrProperty: largeKey
+        offset: 4
+
+- name: xml-insert-1
+  type: XML_INSERT_FROM_PROPERTY
+  config:
+    direction: PROPERTY_TO_BODY
+    children:
+      - valueOrProperty: userName
+        xpath: /user/name
+        elementName: name
+
+- name: xml-insert-2
+  type: XML_INSERT_FROM_PROPERTY
+  config:
+    direction: PROPERTY_TO_BODY
+    children:
+      - valueOrProperty: key1
+        xpath: /data/key1
+        elementName: key1
+      - valueOrProperty: key2
+        xpath: /data/key2
+        elementName: key2
+
+
+- name: fixedkeyExtractor1
+  type: FIXED_VALUE_MODIFIER
+  config:
+    direction: BODY_TO_PROPERTY
+    children:
+      - valueOrProperty: header
+        offset: 0
+        length: 3
+    removeExtracted: true
+
+- name: fixedkeyExtractor2
+  type: FIXED_VALUE_MODIFIER
+  config:
+    direction: BODY_TO_PROPERTY
+    children:
+      - valueOrProperty: header
+        offset: 0
+        length: 3
+    removeExtracted: true
+
+- name: fixedkeyExtractor3
+  type: FIXED_VALUE_MODIFIER
+  config:
+    direction: BODY_TO_PROPERTY
+    children:
+      - valueOrProperty: header
+        offset: 0
+        length: 3
+    removeExtracted: false
+
+- name: xmlKeyExtractor1
+  type: XML_VALUE_MODIFIER
+  config:
+    direction: BODY_TO_PROPERTY
+    children:
+      - valueOrProperty: header
+        xpath: /root/header
+    removeExtracted: true
+
+- name: xmlKeyExtractor2
+  type: XML_VALUE_MODIFIER
+  config:
+    direction: BODY_TO_PROPERTY
+    children:
+      - valueOrProperty: header
+        xpath: /root/header
+    removeExtracted: false
+
+- name: offsetModifier1
+  type: FIXED_VALUE_MODIFIER
+  config:
+    direction: MODIFY_BODY
+    children:
+      - offset: 3
+        valueOrProperty: "XYZ"
+
+- name: xmlModifier1
+  type: XML_VALUE_MODIFIER
+  config:
+    direction: MODIFY_BODY
+    children:
+      - xpath: "/person/name"
+        valueOrProperty: "Alice"
+
+- name: modifyJsonBody
+  config:
+    direction: MODIFY_BODY
+    children:
+      - jsonPath: $.person.name
+        valueOrProperty: Alice
+      - jsonPath: $.person.age
+        valueOrProperty: "30"
+
+- name: propertyToBody
+  config:
+    direction: PROPERTY_TO_BODY
+    children:
+      - jsonPath: $.user.name
+        valueOrProperty: userName
+      - jsonPath: $.user.age
+        valueOrProperty: userAge
+
+- name: bodyToProperty
+  config:
+    direction: BODY_TO_PROPERTY
+    children:
+      - jsonPath: $.user.name
+        valueOrProperty: userName
+      - jsonPath: $.user.age
+        valueOrProperty: userAge

@@ -1,0 +1,9 @@
+modules:
+  - name: WebSocketIngress
+    type: ingress
+    className: io.zefio.gateway.websocket.WebSocketIngress
+    dtoClassName: io.zefio.gateway.websocket.dto.WebSocketIngressValues
+  - name: WebSocketUpstream
+    type: upstream
+    className: io.zefio.gateway.websocket.WebSocketUpstream
+    dtoClassName: io.zefio.gateway.websocket.dto.WebSocketUpstreamValues

@@ -1,0 +1,18 @@
+# .editorconfig
+root = true
+
+[*]
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# 쉘 스크립트는 무조건 LF 사용
+[*.sh]
+end_of_line = lf
+
+# Dockerfile 및 YAML도 LF 권장
+[Dockerfile]
+end_of_line = lf
+
+[*.{yml,yaml}]
+end_of_line = lf

@@ -1,0 +1,136 @@
+# =====================================================================
+# Zefio v1.0 Component Reference Master Manifest
+# =====================================================================
+meta:
+  version: "1.0"
+  total_modules: 73
+  generated_by: "Zefio Doc Automation Pipeline"
+  base_dir: "03-component-reference"
+
+title: "🧩 컴포넌트 레퍼런스 마스터 인덱스"
+description: "Zefio v1.0는 엔터프라이즈 통합 및 대외 연동에 필요한 거의 모든 프로토콜과 데이터 제어 기능을 제공합니다. 상세한 YAML 옵션과 실무 예시는 아래 카테고리별 기술명을 클릭하여 확인하십시오."
+
+categories:
+  - id: "connectivity_mq"
+    title: "📡 메시징 미들웨어 (MQ & Pub/Sub)"
+    headers: ["프로토콜", "컴포넌트 리스트", "상세 가이드"]
+    rows:
+      - target_file: "03-kafka.md"
+        columns: ["**Apache Kafka**", "`KafkaIngress`, `KafkaUpstream`, `KafkaReceiver`", "[분산 스트리밍 명세](03-kafka.md)"]
+        modules: ["KafkaIngress", "KafkaUpstream", "KafkaReceiver"]
+      - target_file: "04-rabbitmq.md"
+        columns: ["**RabbitMQ**", "`RabbitMQIngress`, `RabbitMQUpstream`, `RabbitMQReceiver`", "[AMQP 메시징 명세](04-rabbitmq.md)"]
+        modules: ["RabbitMQIngress", "RabbitMQUpstream", "RabbitMQReceiver"]
+      - target_file: "05-nats.md"
+        columns: ["**NATS**", "`NatsIngress`, `NatsUpstream`, `NatsReceiver`", "[Cloud Native 메시징 명세](05-nats.md)"]
+        modules: ["NatsIngress", "NatsUpstream", "NatsReceiver"]
+      - target_file: "25-activemq.md"
+        columns: ["**ActiveMQ**", "`ActiveMqIngress`, `ActiveMqUpstream`", "[JMS ActiveMQ 명세](25-activemq.md)"]
+        modules: ["ActiveMqIngress", "ActiveMqUpstream"]
+      - target_file: "06-ibmmq.md"
+        columns: ["**IBM MQ**", "`IbmMQIngress`, `IBMMQ_O`", "[IBM MQ(WebSphere) 명세](06-ibmmq.md)"]
+        modules: ["IbmMQIngress", "IBMMQ_O"]
+
+  - id: "connectivity_net"
+    title: "🌐 네트워크 프로토콜 (Network)"
+    headers: ["프로토콜", "컴포넌트 리스트", "상세 가이드"]
+    rows:
+      - target_file: "01-tcp.md"
+        columns: ["**TCP**", "`TcpIngress`, `TcpUpstream`", "[Netty 기반 TCP 전송 명세](01-tcp.md)"]
+        modules: ["TcpIngress", "TcpUpstream"]
+      - target_file: "02-http-https.md"
+        columns: ["**HTTP/HTTPS**", "`HttpIngress`, `HttpUpstream`, `HttpsIngress`, `HttpsUpstream`", "[RESTful/Web 통신 명세](02-http-https.md)"]
+        modules: ["HttpIngress", "HttpUpstream", "HttpsIngress", "HttpsUpstream"]
+      - target_file: "19-websocket.md"
+        columns: ["**WebSocket**", "`WebSocketIngress`, `WebSocketUpstream`", "[양방향 스트리밍 명세](19-websocket.md)"]
+        modules: ["WebSocketIngress", "WebSocketUpstream"]
+
+  - id: "storage"
+    title: "💾 데이터 및 스토리지 (Storage)"
+    headers: ["구분", "컴포넌트 리스트", "상세 가이드"]
+    rows:
+      - target_file: "11-database.md"
+        columns: ["**Database**", "`JdbcIngress`, `JdbcQueryExecute`", "[DB 인바운드 및 쿼리 필터 명세](11-database.md)"]
+        modules: ["JdbcIngress", "JdbcQueryExecute"]
+      - target_file: "07-redis.md"
+        columns: ["**Redis**", "`RedisIngress`, `RedisUpstream`, `RedisReceiver`", "[Redis Cache/PubSub 명세](07-redis.md)"]
+        modules: ["RedisIngress", "RedisUpstream", "RedisReceiver"]
+      - target_file: "08-ehcache.md"
+        columns: ["**Ehcache**", "`EHCACHE_I`, `EHCACHE_O`, `EHCACHE_R`", "[인메모리 로컬 캐시 명세](08-ehcache.md)"]
+        modules: ["EHCACHE_I", "EHCACHE_O", "EHCACHE_R"]
+      - target_file: "10-cloud-storage.md"
+        columns: ["**Cloud Storage**", "`CLOUD_AWS_*`, `CLOUD_GCS_*`, `CLOUD_OZONE_*`", "[AWS/GCS/Ozone 클라우드 전송](10-cloud-storage.md)"]
+        modules: ["AwsS3Interceptor", "GcsInterceptor", "OzoneInterceptor"]
+
+  - id: "file_handling"
+    title: "📂 파일 제어 및 스케줄링 (File & Job)"
+    headers: ["분류", "주요 컴포넌트", "상세 가이드"]
+    rows:
+      - target_file: "09-ftp-sftp.md"
+        columns: ["**FTP/SFTP**", "`FTPIngress`, `FTPFileInterceptor`, `SFTPIngress`, `SFTPFileInterceptor`", "[전송 및 오류 처리 필터](09-ftp-sftp.md)"]
+        modules: ["FTPIngress", "FTPFileInterceptor", "SFTPIngress", "SFTPFileInterceptor", "SFTP_AFTER_HTTP", "SFTPFaultHandler"]
+      - target_file: "20-file-watch.md"
+        columns: ["**File Watch**", "`DirectoryIngress`", "[디렉토리 모니터링 명세](20-file-watch.md)"]
+        modules: ["DirectoryIngress"]
+      - target_file: "21-scheduling.md"
+        columns: ["**Quartz**", "`QuartzIngress`", "[배치 스케줄링 명세](21-scheduling.md)"]
+        modules: ["QuartzIngress"]
+
+  - id: "legacy_middleware"
+    title: "🏢 레거시 미들웨어 (Legacy)"
+    headers: ["솔루션", "주요 컴포넌트", "상세 가이드"]
+    rows:
+      - target_file: "12-middleware.md"
+        columns: ["**Tuxedo/Tmax/EJB**", "`JoltIngress/O`, `JTmaxIngress`, `JTmaxReplyToServer`, `WebTUpstream`, `EjbIngress`, `WebLogicUpstream`", "[기간계 연동 어댑터](12-middleware.md)"]
+        modules: ["JoltIngress", "JoltUpstream", "JTmaxIngress", "JTmaxReplyToServer", "WebTUpstream", "EjbIngress", "WebLogicUpstream"]
+
+  - id: "data_processing"
+    title: "⚙️ 전문 처리 및 변환 (Processing)"
+    headers: ["카테고리", "주요 필터 이름", "상세 가이드"]
+    rows:
+      - target_file: "13-transform.md"
+        columns: ["**Format Transform**", "`TRANSFORM_*` (JSON/XML/FIXED)", "[전문 양방향 변환 필터](13-transform.md)"]
+        modules: ["TransformFixed2Json", "TransformFixed2Xml", "TransformJson2Fixed", "TransformJson2Xml", "TransformXml2Fixed", "TransformXml2Json"]
+      - target_file: "14-modifier.md"
+        columns: ["**Value Modifier**", "`MODIFIER`, `*_VALUE_MODIFIER`, `PropertyMappingInterceptor`", "[데이터 값 조작 및 매핑](14-modifier.md)"]
+        modules: ["MODIFIER", "FIXED_VALUE_MODIFIER", "JSON_VALUE_MODIFIER", "XML_VALUE_MODIFIER", "PropertyMappingInterceptor"]
+      - target_file: "02-http-https.md"
+        columns: ["**HTTP Utils**", "`FileDownloadFromMultipart`, `FileDownloadFromMultipartByDto`, `HttpHeaderValeSetter`", "[HTTP 특화 유틸리티 필터](02-http-https.md)"]
+        modules: ["FileDownloadFromMultipart", "FileDownloadFromMultipartByDto", "HttpHeaderValeSetter"]
+
+  - id: "flow_control"
+    title: "🛤️ 플로우 및 트래픽 제어 (Flow & Traffic)"
+    headers: ["카테고리", "주요 필터 이름", "상세 가이드"]
+    rows:
+      - target_file: "15-routing.md"
+        columns: ["**Routing**", "`ROUTER`, `MessageRouterInterceptor`, `MessageRouterResponseInterceptor`", "[메시지 분기 처리](15-routing.md)"]
+        modules: ["ROUTER", "MessageRouterInterceptor", "MessageRouterResponseInterceptor"]
+      - target_file: "18-flow-system.md"
+        columns: ["**Internal VM**", "`LocalIngress`, `LocalUpstream`, `DynamicLocalUpstream`", "[내부 플로우 브릿지](18-flow-system.md)"]
+        modules: ["LocalIngress", "LocalUpstream", "DynamicLocalUpstream"]
+      - target_file: "24-async-sync-system.md"
+        columns: ["**Sync Bridge**", "`AsyncSuspendInterceptor`, `AsyncResumeInterceptor`", "[비동기-동기 전환 제어](24-async-sync-system.md)"]
+        modules: ["AsyncSuspendInterceptor", "AsyncResumeInterceptor"]
+      - target_file: "23-rate-limit.md"
+        columns: ["**Traffic Control**", "`AdvancedRateLimit`", "[유량 제어(Rate Limit) 명세](23-rate-limit.md)"]
+        modules: ["AdvancedRateLimit"]
+      - target_file: "26-validator.md"
+        columns: [ "**Validator Control**", "`VALIDATOR`", "[유효성 검사 필터 명세](26-validator.md)" ]
+        modules: [ "VALIDATOR" ]
+
+  - id: "system_common"
+    title: "🛠️ 공통 및 에러 처리 (System)"
+    headers: ["카테고리", "주요 필터 이름", "상세 가이드"]
+    rows:
+      - target_file: "16-error.md"
+        columns: ["**Error Filters**", "`FixedFaultHandler`, `JsonFaultHandler`, `XmlFaultHandler`", "[표준 에러 응답 생성](16-error.md)"]
+        modules: ["FixedFaultHandler", "JsonFaultHandler", "XmlFaultHandler"]
+      - target_file: "17-common-filters.md"
+        columns: ["**Common Utils**", "`EncodingConverter`, `LOGGING`, `PAYLOAD_CRYPTO`", "[인코딩/로깅/암호화](17-common-filters.md)"]
+        modules: ["EncodingConverter", "LOGGING", "PAYLOAD_CRYPTO"]
+
+footer: |
+  ## 💡 참고 사항
+  * 모든 컴포넌트는 **SEDA 엔진** 위에서 동작하며, I/O 작업은 격리된 전용 풀에서 수행됩니다.
+  * 거래 추적을 위해 모든 필터에서 **MDC(Mapped Diagnostic Context)**가 자동으로 유지됩니다.
+  * 특수한 운영 팁이나 주의사항은 각 문서 하단의 **Expert Tips** 섹션을 참조하십시오.

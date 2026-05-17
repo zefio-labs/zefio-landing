@@ -1,0 +1,71 @@
+# ==============================================================================
+# 파일명: flows/flow-tryscope-retry.yaml
+# 설  명: TRY_SCOPE 중첩 구조를 통한 RETRY -> FALLBACK 연쇄 검증 (v2.6 규격)
+# ==============================================================================
+flows:
+  - name: tryscope-retry-flow
+    options:
+      threadPool:
+        corePoolSize: 10
+    ingress:
+      name: from-client-retry-51005
+      type: HttpIngress
+      telegram: fixed-http-req
+      profile: ingress-sync-alt
+      exchangePattern: RequestReply
+      config:
+        keepAlive: false
+        port: 51005
+        requestEncoding: utf-8
+        responseEncoding: utf-8
+        responseContentType: text/plain
+        responseMatchingType: session
+        readTimeout: 50000
+        transactionTimeoutMillis: 40000
+
+    steps:
+      # ========================================================================
+      # 🛡️ 외곽 스코프: 내부의 모든 재시도가 실패하고 올라온 에러를 플랜 B로 방어
+      # ========================================================================
+      - name: outer-fallback-scope
+        type: TRY_SCOPE
+        on-error: FALLBACK  # 🚀 [v2.6 핵심] 에러 발생 시 fallback-steps 실행
+
+        steps:
+          # ====================================================================
+          # 🔄 내부 스코프: 에러 발생 시 3번 재시도 (각 시도간 500ms 대기)
+          # ====================================================================
+          - name: inner-retry-scope
+            type: TRY_SCOPE
+
+            retry:
+              enabled: true
+              maxRetries: 3
+              delay: 500 # 3회 재시도 시 약 1.5초 이상의 시간이 소요됨
+
+            # 🚀 [v2.6 핵심] 3회 모두 실패하면 공간의 축(흐름)을 어떻게 할 것인가? -> 상위로 던짐!
+            on-error: THROW
+
+            steps:
+              - name: force-error-step
+                type: SpELValidatorInterceptor
+                config:
+                  condition: "#{false}"
+                  errorMessage: "Retry Trigger Error"
+                  errorStatus: "TIMEOUT" # 🚀 [해결책] 엔진에게 "이건 타임아웃이니까 재시도해!" 라고 속임
+
+        # ========================================================================
+        # 🚀 외곽 스코프의 우회 경로
+        # 내부 스코프가 3번 다 실패하고 THROW 한 에러를 여기서 낚아채어 정상 응답으로 조립!
+        # ========================================================================
+        fallback-steps:
+          - name: fallback-restore
+            type: SpELModifierInterceptor
+            config:
+              assignments:
+                - target: "body['PREFIX']"
+                  expression: "#{'RES'}"       # 💡 안전한 SpEL 리터럴 문자열
+                - target: "body['TARGET_VAL']"
+                  expression: "#{'RTY'}"       # Retry를 다 거치고 왔음을 마킹
+                - target: "body['GLOBAL_TRX_ID']"
+                  expression: "#{payload.trxID}" # 원래 트랜잭션 ID 복원

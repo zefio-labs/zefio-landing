@@ -1,0 +1,456 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>io.zefio</groupId>
+	<artifactId>zefio-engine</artifactId>
+    <version>0.9.0</version>
+	<packaging>pom</packaging>
+
+
+	<!-- 배포용 설정파일 구분 -->
+	<profiles>
+        <profile>
+            <id>pkg-standalone-window</id>
+            <properties>
+                <descriptor>src/main/assembly/standalone/windows.xml</descriptor>
+            </properties>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+        </profile>
+
+        <profile>
+            <id>pkg-standalone-linux</id>
+            <properties>
+                <descriptor>src/main/assembly/standalone/unix.xml</descriptor>
+            </properties>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+        </profile>
+
+		<profile>
+			<id>jdk-1.8</id>
+			<properties>
+                <jdk.version>jdk1.8</jdk.version>
+                <jdk.folder>jre1.8.0_345.amd64</jdk.folder>
+				<maven.compiler.source>1.8</maven.compiler.source>
+				<maven.compiler.target>1.8</maven.compiler.target>
+
+				<spring.boot.version>2.7.18</spring.boot.version>
+				<spring.cloud.version>3.1.9</spring.cloud.version>
+
+				<logback.version>1.2.12</logback.version>
+				<jackson.version>2.15.3</jackson.version>
+                <quartz.version>2.4.0</quartz.version>
+                <caffeine.version>2.9.3</caffeine.version>
+				<jaxws-rt.version>3.0.2</jaxws-rt.version>
+			</properties>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+				<jdk>1.8</jdk>
+			</activation>
+		</profile>
+
+		<profile>
+			<id>jdk-21</id>
+			<properties>
+                <jdk.version>jdk21</jdk.version>
+                <jdk.folder>jdk-21.0.3</jdk.folder>
+				<maven.compiler.source>21</maven.compiler.source>
+				<maven.compiler.target>21</maven.compiler.target>
+
+				<spring.boot.version>3.5.3</spring.boot.version>
+				<spring.cloud.version>4.2.0</spring.cloud.version>
+
+				<logback.version>1.5.18</logback.version>
+				<jackson.version>2.19.1</jackson.version>
+                <quartz.version>2.5.0</quartz.version>
+                <caffeine.version>3.2.3</caffeine.version>
+				<jaxws-rt.version>4.0.3</jaxws-rt.version>
+			</properties>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+				<jdk>21</jdk>
+			</activation>
+			<dependencies>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-validation</artifactId>
+                </dependency>
+			</dependencies>
+		</profile>
+	</profiles>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+		<!--	apache commons	-->
+		<commons.lang3.version>3.18.0</commons.lang3.version>
+		<commons.pool2.version>2.12.1</commons.pool2.version>
+		<commons.io.version>2.20.0</commons.io.version>
+		<commons.net.version>3.11.1</commons.net.version>
+
+		<!--	basic	-->
+		<guava.version>33.5.0-jre</guava.version>
+		<netty.version>4.1.127.Final</netty.version>
+        <jsonpath.version>2.10.0</jsonpath.version>
+		<javatuples.version>1.2</javatuples.version>
+		<mybatis.version>3.5.19</mybatis.version>
+
+		<!--	jdbc	-->
+		<mysql.jdbc.version>9.4.0</mysql.jdbc.version>
+		<oracle.jdbc.version>19.3.0.0</oracle.jdbc.version>
+		<mybatis.version>3.5.19</mybatis.version>
+
+		<!--	utility	-->
+		<lombok.version>1.18.38</lombok.version>
+		<springdoc.openapi.ui.version>1.8.0</springdoc.openapi.ui.version>
+		<snakeyaml.version>2.5</snakeyaml.version>
+		<failsafe.version>3.3.2</failsafe.version>
+		<okhttp.version>4.12.0</okhttp.version>
+		<jedis.version>4.4.3</jedis.version>
+
+		<!--	test	-->
+		<awaitility.version>4.3.0</awaitility.version>
+
+		<dist.project.id>zefio-engine</dist.project.id>
+		<dist.start.class>io.zefio.launcher.ZefioApplication</dist.start.class>
+
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<!-- [1] Spring Boot BOM -->
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-dependencies</artifactId>
+				<version>${spring.boot.version}</version>
+				<scope>import</scope>
+				<type>pom</type>
+			</dependency>
+
+			<!-- [2] Zefio Core & Support -->
+			<dependency><groupId>io.zefio</groupId><artifactId>zefio-core</artifactId><version>${project.version}</version></dependency>
+			<dependency><groupId>io.zefio</groupId><artifactId>zefio-gateway</artifactId><version>${project.version}</version></dependency>
+			<dependency><groupId>io.zefio</groupId><artifactId>zefio-launcher</artifactId><version>${project.version}</version></dependency>
+			<dependency>
+				<groupId>io.zefio</groupId><artifactId>zefio-test-support</artifactId><version>${project.version}</version>
+				<type>test-jar</type><scope>test</scope>
+			</dependency>
+
+			<!-- https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-config-server -->
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-context</artifactId>
+				<version>${spring.cloud.version}</version>
+				<exclusions>
+					<exclusion>
+						<groupId>org.springframework.security</groupId>
+						<artifactId>spring-security-crypto</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-web</artifactId>
+				<version>${spring.boot.version}</version>
+					<!--
+					<exclusions>
+						<exclusion>
+							<groupId>org.springframework.boot</groupId>
+							<artifactId>spring-boot-starter-logging</artifactId>
+						</exclusion>
+					</exclusions>
+					-->
+				<exclusions>
+					<exclusion>
+						<groupId>org.apache.logging.log4j</groupId>
+						<artifactId>log4j-api</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>org.apache.logging.log4j</groupId>
+						<artifactId>log4j-to-slf4j</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>ch.qos.logback</groupId>
+						<artifactId>logback-core</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+
+            <dependency>
+                <groupId>com.github.ben-manes.caffeine</groupId>
+                <artifactId>caffeine</artifactId>
+                <version>${caffeine.version}</version>
+            </dependency>
+
+			<!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-classic -->
+			<dependency>
+			    <groupId>ch.qos.logback</groupId>
+			    <artifactId>logback-classic</artifactId>
+			    <version>${logback.version}</version>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-core -->
+			<dependency>
+			    <groupId>ch.qos.logback</groupId>
+			    <artifactId>logback-core</artifactId>
+			    <version>${logback.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-actuator</artifactId>
+				<version>${spring.boot.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-devtools</artifactId>
+				<version>${spring.boot.version}</version>
+				<optional>true</optional>
+			</dependency>
+
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-core</artifactId>
+				<version>${jackson.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-databind</artifactId>
+				<version>${jackson.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-annotations</artifactId>
+				<version>${jackson.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.dataformat</groupId>
+				<artifactId>jackson-dataformat-xml</artifactId>
+				<version>${jackson.version}</version>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml -->
+			<dependency>
+				<groupId>com.fasterxml.jackson.dataformat</groupId>
+				<artifactId>jackson-dataformat-yaml</artifactId>
+				<version>${jackson.version}</version>
+			</dependency>
+
+			<!-- https://mvnrepository.com/artifact/com.ibm.mq/mq-jms-spring-boot-starter -->
+			<dependency>
+				<groupId>com.ibm.mq</groupId>
+				<artifactId>mq-jms-spring-boot-starter</artifactId>
+				<version>${spring.boot.version}</version>
+			</dependency>
+
+			<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-pool2 -->
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-pool2</artifactId>
+				<version>${commons.pool2.version}</version>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-lang3</artifactId>
+				<version>${commons.lang3.version}</version>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-io -->
+			<dependency>
+				<groupId>commons-io</groupId>
+				<artifactId>commons-io</artifactId>
+				<version>${commons.io.version}</version>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/commons-net/commons-net -->
+			<dependency>
+				<groupId>commons-net</groupId>
+				<artifactId>commons-net</artifactId>
+				<version>${commons.net.version}</version>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
+			<dependency>
+				<groupId>org.projectlombok</groupId>
+				<artifactId>lombok</artifactId>
+				<version>${lombok.version}</version>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-ui -->
+			<dependency>
+				<groupId>org.springdoc</groupId>
+				<artifactId>springdoc-openapi-ui</artifactId>
+				<version>${springdoc.openapi.ui.version}</version>
+			</dependency>
+
+			<!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+			<dependency>
+				<groupId>com.google.guava</groupId>
+				<artifactId>guava</artifactId>
+				<version>${guava.version}</version>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/io.netty/netty-all -->
+			<dependency>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-all</artifactId>
+				<version>${netty.version}</version>
+			</dependency>
+
+            <!-- https://mvnrepository.com/artifact/com.jayway.jsonpath/json-path -->
+            <dependency>
+                <groupId>com.jayway.jsonpath</groupId>
+                <artifactId>json-path</artifactId>
+                <version>${jsonpath.version}</version>
+            </dependency>
+
+			<!-- https://mvnrepository.com/artifact/org.javatuples/javatuples -->
+			<dependency>
+				<groupId>org.javatuples</groupId>
+				<artifactId>javatuples</artifactId>
+				<version>${javatuples.version}</version>
+			</dependency>
+
+			<!-- https://mvnrepository.com/artifact/org.mybatis/mybatis -->
+			<dependency>
+				<groupId>org.mybatis</groupId>
+				<artifactId>mybatis</artifactId>
+				<version>${mybatis.version}</version>
+			</dependency>
+
+			<!-- https://mvnrepository.com/artifact/org.yaml/snakeyaml -->
+			<dependency>
+				<groupId>org.yaml</groupId>
+				<artifactId>snakeyaml</artifactId>
+				<version>${snakeyaml.version}</version>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/dev.failsafe/failsafe -->
+			<dependency>
+				<groupId>dev.failsafe</groupId>
+				<artifactId>failsafe</artifactId>
+				<version>${failsafe.version}</version>
+			</dependency>
+			<!--    jax webservice / soup   -->
+			<!-- https://mvnrepository.com/artifact/com.sun.xml.ws/jaxws-rt -->
+			<dependency>
+				<groupId>com.sun.xml.ws</groupId>
+				<artifactId>jaxws-rt</artifactId>
+				<version>${jaxws-rt.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.squareup.okhttp3</groupId>
+				<artifactId>okhttp</artifactId>
+				<version>${okhttp.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>redis.clients</groupId>
+				<artifactId>jedis</artifactId>
+				<version>${jedis.version}</version>
+			</dependency>
+
+		</dependencies>
+	</dependencyManagement>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>com.vaadin.external.google</groupId>
+					<artifactId>android-json</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.awaitility</groupId>
+			<artifactId>awaitility</artifactId>
+			<version>${awaitility.version}</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>3.7.1</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-clean-plugin</artifactId>
+				<version>3.4.1</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.14.0</version>
+				<configuration>
+					<!-- http://maven.apache.org/plugins/maven-compiler-plugin/ -->
+					<source>${maven.compiler.source}</source>
+					<target>${maven.compiler.target}</target>
+					<encoding>${project.build.sourceEncoding}</encoding>
+					<compilerArgs>
+						<arg>-Xlint:-options</arg>
+					</compilerArgs>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>3.8.1</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<version>3.1.4</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-install-plugin</artifactId>
+				<version>3.1.4</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.4.2</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.3.1</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-site-plugin</artifactId>
+				<version>3.21.0</version>
+			</plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.2.0</version>
+            </plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.5.3</version>
+                <configuration>
+                    <argLine>-Dfile.encoding=UTF-8</argLine>
+                </configuration>
+            </plugin>
+		</plugins>
+	</build>
+
+
+	<modules>
+		<module>zefio-core</module>
+		<module>zefio-gateway</module>
+		<module>zefio-support</module>
+		<module>zefio-launcher</module>
+    </modules>
+
+</project>

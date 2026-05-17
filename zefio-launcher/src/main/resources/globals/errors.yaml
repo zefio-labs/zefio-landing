@@ -1,0 +1,23 @@
+global-errors:
+  fixederror:
+    type: FixedFaultHandler
+    label: "공통 에러 처리"
+    config:
+      errorCodeRules: []
+      valueOverrides: []
+      messageRule: null
+
+  customerror:
+    type: FixedFaultHandler
+    label: "공통 에러 처리"
+    config:
+      messageRule:
+        offset: 522
+        mode: "ERROR"
+      valueOverrides:
+        - offset: 168
+          value: "1"
+        - offset: 69
+          value: "XNS"
+        - offset: 72
+          value: "XNS"

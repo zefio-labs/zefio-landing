@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.zefio</groupId>
+        <artifactId>zefio-engine</artifactId>
+        <version>0.9.0</version>
+    </parent>
+
+    <artifactId>zefio-support</artifactId>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>zefio-test-support</module>
+    </modules>
+
+    <profiles>
+        <profile>
+            <id>jdk-1.8</id>
+            <activation>
+                <jdk>1.8</jdk>
+            </activation>
+            <modules>
+                <module>zefio-jdk-v1.8</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>jdk-21</id>
+            <activation>
+                <jdk>21</jdk>
+            </activation>
+            <modules>
+                <module>zefio-jdk-v21</module>
+            </modules>
+        </profile>
+    </profiles>
+
+</project>

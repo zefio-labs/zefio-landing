@@ -1,0 +1,52 @@
+flows:
+  - name: inbound
+    label: "7번_HTTP_TO_TCP_대규모"
+    options:
+      threadPool:
+        corePoolSize: 200
+        maxPoolSize: 400
+        queueCapacity: 0     # 💡 2.4 원본의 sync 전송을 위해 0으로 유지
+        autoScaling:
+          enabled: true
+          threshold: 0.7
+          checkInterval: 5
+          scaleUpStep: 30
+          scaleDownStep: 10
+      cpuQueue:
+        capacity: 50000
+      ioQueue:
+        capacity: 20000
+
+    # 🎯 수신부: 동기(sync)
+    ingress:
+      name: from
+      label: "HTTP 수신(51007)"
+      type: HttpIngress
+      telegram: fixed-standard
+      profile: ingress-sync
+      exchangePattern: RequestReply
+      config:
+        port: 51007
+        requestEncoding: utf-8
+        responseEncoding: utf-8
+        # 🚀 [비즈니스 특화] HTTP 응답 헤더 설정
+        responseContentType: text/plain
+
+    # 🎯 송신부: 동기(sync) TCP 1,000 Pool
+    steps:
+      - name: to
+        label: "타겟 요청(TCP_Massive)"
+        type: TcpUpstream
+        telegram: fixed-standard
+        profile: upstream-sync-massive
+        exchangePattern: RequestReply
+        retry:
+          enabled: false
+        config:
+          host: 192.168.3.218
+          port: 51107
+          requestEncoding: utf-8
+          responseEncoding: utf-8
+    on-error:
+      - error-type: ANY
+        refErrorHandler: fixederror

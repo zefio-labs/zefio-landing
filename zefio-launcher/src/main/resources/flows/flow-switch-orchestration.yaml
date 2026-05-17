@@ -1,0 +1,167 @@
+# ==============================================================================
+# 파일명: flows/flow-switch-orchestration.yaml
+# 설  명: [v2.6] SwitchProcessor 기반 지능형 라우팅 및 계층형 에러 제어
+# ==============================================================================
+flows:
+  - name: flow-switch-main
+    label: "SpEL 지능형 스위치 라우터 테스트 플로우"
+    # options: 생략 (Core 50 / Max 100 디폴트 스레드풀 자동 적용 검증)
+
+    ingress:
+      name: from-http-switch-51003
+      type: HttpIngress
+      telegram: fixed-http-req
+      profile: ingress-sync-alt
+      exchangePattern: RequestReply
+      config:
+        keepAlive: false
+        port: 51003
+        requestEncoding: utf-8
+        responseEncoding: utf-8
+        responseContentType: text/plain
+        responseMatchingType: session
+        readTimeout: 50000
+        transactionTimeoutMillis: 40000
+
+    steps:
+      # [Step 1] 가드레일: 1차 방어선 (ABC가 아니면 차단)
+      - name: validate-payload
+        type: SpELValidatorInterceptor
+        config:
+          condition: "#{body['TARGET_VAL'] == 'ABC'}"
+          errorMessage: "Guardrail Blocked"
+          errorStatus: "VALIDATION_FAILED"
+
+      # [Step 2] 데이터 연금술: 바디 변조 및 컨텍스트 생성 🚀 (이게 빠져있었습니다!)
+      - name: modify-fixed-body
+        type: SpELModifierInterceptor
+        config:
+          assignments:
+            - target: "body['TARGET_VAL']"
+              expression: "#{'XYZ'}"
+            - target: "body['PREFIX']"
+              expression: "#{body['PREFIX'] == 'REQ' ? 'RES' : 'ERR'}"
+            - target: "payload.headers['REQ_AMT']"
+              expression: "#{150000}"
+            - target: "payload.headers['USER_LEVEL']"
+              expression: "#{body['GLOBAL_TRX_ID'].startsWith('VIP') ? 'GOLD' : 'SILVER'}"
+
+      # [Step 3] SWITCH: 지능형 오케스트레이터 (v2.6 에러 방어막 버전)
+      - name: main-switch-router
+        type: SWITCH
+        cases:
+          # ────────────────────────────────────────────────────────────────────
+          # [Case 1] VIP 고액 거래: 5회 재시도 및 폴백 적용
+          # ────────────────────────────────────────────────────────────────────
+          - condition: "#{payload.headers['USER_LEVEL'] == 'GOLD' and payload.headers['REQ_AMT'] > 100000}"
+            steps:
+              - name: vip-scope
+                type: TRY_SCOPE
+                retry:
+                  enabled: true
+                  maxRetries: 5
+                  delay: 200
+                on-error: FALLBACK
+                steps:
+                  - name: call-vip-service
+                    type: DynamicLocalUpstream
+                    config:
+                      targetFlowExpression: "#{'flow-target-xml'}"
+                fallback-steps:
+                  - name: vip-fallback-modifier
+                    type: SpELModifierInterceptor
+                    config:
+                      assignments:
+                        - target: "body['DUMMY_HEADER']"
+                          expression: "#{'VIP_SERVICE_TEMPORARILY_UNAVAILABLE'}"
+
+          # ────────────────────────────────────────────────────────────────────
+          # [Case 2] 정규식 기반 Mobile 필터링: 3회 재시도 및 로깅
+          # ────────────────────────────────────────────────────────────────────
+          - condition: "#{body['PREFIX'] matches '^[M][0-9]{2}$'}" # M01, M02 등 매칭
+            steps:
+              - name: mobile-scope
+                type: TRY_SCOPE
+                retry:
+                  enabled: true
+                  maxRetries: 3
+                  delay: 500
+                on-error: THROW # 💡 모바일 장애는 중요하므로 상위 DLQ로 던짐
+                steps:
+                  - name: mobile-logger
+                    type: LoggingInterceptor
+                    config: { message: "Mobile Traffic Detected: #{body['PREFIX']}" }
+                  - name: call-mobile-service
+                    type: DynamicLocalUpstream
+                    config:
+                      targetFlowExpression: "#{'flow-target-json'}"
+
+          # ────────────────────────────────────────────────────────────────────
+          # [Case 3] 일반 거래 (XYZ 변환 완료 건): 표준 호출
+          # ────────────────────────────────────────────────────────────────────
+          - condition: "#{body['TARGET_VAL'] == 'ABC'}"
+            steps:
+              - name: direct-to-json
+                type: DynamicLocalUpstream
+                config:
+                  targetFlowExpression: "#{'flow-target-json'}"
+
+        # ──────────────────────────────────────────────────────────────────────
+        # [Default] 모든 조건 불일치 시: 안전한 Fallback 경로
+        # ──────────────────────────────────────────────────────────────────────
+        defaultSteps:
+          - name: default-fallback-logger
+            type: LoggingInterceptor
+            config: { message: "No match found. Routing to Default JSON Path." }
+          - name: call-default-json
+            type: DynamicLocalUpstream
+            config:
+              targetFlowExpression: "#{'flow-target-json'}"
+
+    # 최상단 글로벌 에러 핸들러 (Flow Level DLQ)
+    on-error:
+      - error-type: ANY
+        refErrorHandler: fixederror
+
+
+  # ==============================================================================
+  # 🚀 [Sub-Flow 1] XML 타겟 전담 마이크로서비스
+  # ==============================================================================
+  - name: flow-target-xml
+    label: "XML 엔드포인트 전담 중계 플로우"
+    ingress:
+      name: vm-inbound-xml
+      type: LocalIngress                 # 내부 통신용 더미 타입
+      telegram: fixed-http-req   # 메인 플로우와 동일한 텔레그램 스펙 유지
+      exchangePattern: RequestReply
+    steps:
+      - name: call-global-xml
+        label: "글로벌 XML 엔드포인트 호출"
+        type: SpELRouterInterceptor
+        config:
+          routingRules:
+            # 💡 서브 플로우 내부에서는 무조건(#{true}) 매핑된 글로벌 엔드포인트를 호출합니다.
+            - name: "Direct to XML Endpoint"
+              condition: "#{true}"
+              refModuleName: "to-xml"
+
+  # ==============================================================================
+  # 🚀 [Sub-Flow 2] JSON 타겟 전담 마이크로서비스
+  # ==============================================================================
+  - name: flow-target-json
+    label: "JSON 엔드포인트 전담 중계 플로우"
+    ingress:
+      name: vm-inbound-json
+      type: LocalIngress
+      telegram: fixed-http-req
+      exchangePattern: RequestReply
+    steps:
+      - name: call-global-json
+        label: "글로벌 JSON 엔드포인트 호출"
+        type: SpELRouterInterceptor
+        config:
+          routingRules:
+            # 💡 서브 플로우 내부에서는 무조건(#{true}) 매핑된 글로벌 엔드포인트를 호출합니다.
+            - name: "Direct to JSON Endpoint"
+              condition: "#{true}"
+              refModuleName: "to-json"

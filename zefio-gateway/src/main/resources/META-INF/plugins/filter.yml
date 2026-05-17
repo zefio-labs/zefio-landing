@@ -1,0 +1,59 @@
+modules:
+  - name: FIXED_VALUE_MODIFIER
+    type: interceptor
+    className: io.zefio.gateway.filter.modify.ValueModifierDirectional
+    dtoClassName: io.zefio.gateway.filter.modify.dto.FixedBinaryModifierDelegateValues
+  - name: JSON_VALUE_MODIFIER
+    type: interceptor
+    className: io.zefio.gateway.filter.modify.ValueModifierDirectional
+    dtoClassName: io.zefio.gateway.filter.modify.dto.JsonValueModifierDelegateValues
+  - name: XML_VALUE_MODIFIER
+    type: interceptor
+    className: io.zefio.gateway.filter.modify.ValueModifierDirectional
+    dtoClassName: io.zefio.gateway.filter.modify.dto.XmlValueModifierDelegateValues
+
+  - name: LoggingInterceptor
+    type: interceptor
+    className: io.zefio.gateway.filter.observe.LoggingInterceptor
+    dtoClassName: io.zefio.core.schema.dto.EmptyIngressValues
+
+  - name: AdvancedRateLimit
+    type: interceptor
+    className: io.zefio.gateway.filter.resilience.AdvancedRateLimit
+    dtoClassName: io.zefio.gateway.filter.resilience.dto.AdvancedRateLimitValues
+
+  - name: MessageRouterInterceptor
+    type: interceptor
+    className: io.zefio.gateway.filter.routing.MessageRouterInterceptor
+    dtoClassName: io.zefio.gateway.filter.routing.dto.MessageRouterInterceptorValues
+  - name: MessageRouterResponseInterceptor
+    type: interceptor
+    className: io.zefio.gateway.filter.routing.MessageRouterResponseInterceptor
+    dtoClassName: io.zefio.core.schema.dto.EmptyIngressValues
+  # 🚀 [Phase 3] SpEL 기반 라우팅 필터
+  - name: SpELRouterInterceptor
+    type: interceptor
+    className: io.zefio.gateway.filter.routing.SpELRouterInterceptor
+    dtoClassName: io.zefio.gateway.filter.routing.dto.SpELRouterInterceptorValues
+
+  # 🚀 [Phase 2] SpEL 기반 유효성 검사 필터
+  - name: SpELValidatorInterceptor
+    type: interceptor
+    className: io.zefio.gateway.filter.security.SpELValidatorInterceptor
+    dtoClassName: io.zefio.gateway.filter.security.dto.SpELValidatorInterceptorValues
+
+  - name: EncodingConverter
+    type: interceptor
+    className: io.zefio.gateway.filter.transform.EncodingConverter
+    dtoClassName: io.zefio.gateway.filter.transform.dto.EncodingConverterValues
+
+  - name: PropertyMappingInterceptor
+    type: interceptor
+    className: io.zefio.gateway.filter.transform.PropertyMappingInterceptor
+    dtoClassName: io.zefio.gateway.filter.transform.dto.PropertyMappingInterceptorValues
+
+  # 🚀 [Phase 3] SpEL 기반 객체 수정 필터
+  - name: SpELModifierInterceptor
+    type: interceptor
+    className: io.zefio.gateway.filter.transform.SpELModifierInterceptor
+    dtoClassName: io.zefio.gateway.filter.transform.dto.SpELModifierInterceptorValues

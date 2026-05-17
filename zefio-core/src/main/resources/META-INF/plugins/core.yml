@@ -1,0 +1,24 @@
+modules:
+  - name: LocalIngress
+    type: ingress
+    className: io.zefio.core.system.LocalIngress
+    dtoClassName: io.zefio.core.schema.dto.EmptyIngressValues
+  - name: LocalUpstream
+    type: upstream
+    className: io.zefio.core.system.LocalUpstream
+    dtoClassName: io.zefio.core.system.dto.LocalUpstreamValues
+
+  # 🚀 [Phase 2] SpEL 기반 동적 내부 플로우 호출 아웃바운드
+  - name: DynamicLocalUpstream
+    type: upstream
+    className: io.zefio.core.system.DynamicLocalUpstream
+    dtoClassName: io.zefio.core.system.dto.DynamicLocalUpstreamValues
+
+  - name: AsyncResumeInterceptor
+    type: interceptor
+    className: io.zefio.core.system.AsyncResumeInterceptor
+    dtoClassName: io.zefio.core.system.dto.AsyncResumeInterceptorValues
+  - name: AsyncSuspendInterceptor
+    type: interceptor
+    className: io.zefio.core.system.AsyncSuspendInterceptor
+    dtoClassName: io.zefio.core.system.dto.AsyncSuspendInterceptorValues

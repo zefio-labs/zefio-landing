@@ -1,0 +1,56 @@
+flows:
+  - name: inbound
+    label: "9번_HTTP_TO_HTTP_대규모"
+    options:
+      threadPool:
+        corePoolSize: 200
+        maxPoolSize: 400
+        queueCapacity: 0
+        autoScaling:
+          enabled: true
+          threshold: 0.7
+          checkInterval: 5
+          scaleUpStep: 30
+          scaleDownStep: 10
+      cpuQueue:
+        capacity: 50000
+      ioQueue:
+        capacity: 20000
+
+    # 🎯 수신부: 동기(sync)
+    ingress:
+      name: from
+      label: "HTTP 수신(51009)"
+      type: HttpIngress
+      telegram: fixed-standard
+      profile: ingress-sync
+      exchangePattern: RequestReply
+      config:
+        port: 51009
+        requestEncoding: utf-8
+        responseEncoding: utf-8
+        # 🚀 [비즈니스 특화] 수신측 응답 Content-Type
+        responseContentType: text/plain
+
+    # 🎯 송신부: 동기(sync) HTTP 1,000 Pool
+    steps:
+      - name: to
+        label: "타겟 요청(HTTP_Massive)"
+        type: HttpUpstream
+        telegram: fixed-standard
+        profile: upstream-sync-massive
+        exchangePattern: RequestReply
+        retry:
+          enabled: false
+        config:
+          host: 192.168.3.218
+          port: 51109
+          # 🚀 [비즈니스 라우팅] HTTP 송신 특화 설정
+          requestContentType: text/plain
+          requestHttpMethod: POST
+          requestPath: service/
+          requestEncoding: utf-8
+          responseEncoding: utf-8
+    on-error:
+      - error-type: ANY
+        refErrorHandler: fixederror

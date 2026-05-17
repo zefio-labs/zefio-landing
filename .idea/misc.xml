@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
+  <component name="MavenProjectsManager">
+    <option name="originalFiles">
+      <list>
+        <option value="$PROJECT_DIR$/pom.xml" />
+      </list>
+    </option>
+    <option name="ignoredFiles">
+      <set>
+        <option value="$PROJECT_DIR$/zefio-common/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-data/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-ehcache/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-enterprise/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-error/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-file-transfer/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-file/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-filter/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-frontend/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-ftp/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-http/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-jdbc/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-netty/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-payload/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-quartz/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-redis/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-schema/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-sftp/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-tcp/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-telemetry/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-transform/pom.xml" />
+        <option value="$PROJECT_DIR$/zefio-websocket/pom.xml" />
+      </set>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_21" default="true" project-jdk-name="temurin-21" project-jdk-type="JavaSDK" />
+</project>

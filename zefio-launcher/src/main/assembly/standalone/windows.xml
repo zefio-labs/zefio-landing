@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+<assembly
+        xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3 http://maven.apache.org/xsd/assembly-1.1.3.xsd">
+
+    <id>windows</id>
+
+    <formats>
+        <format>zip</format>  <!-- Windows용은 zip이 일반적 -->
+    </formats>
+
+    <dependencySets>
+        <dependencySet>
+            <useProjectArtifact>true</useProjectArtifact>
+            <outputDirectory>lib</outputDirectory>
+        </dependencySet>
+    </dependencySets>
+
+    <fileSets>
+        <fileSet>
+            <directory>${project.build.directory}/lib</directory>
+            <outputDirectory>lib</outputDirectory>
+            <includes>
+                <include>*.jar</include>
+            </includes>
+        </fileSet>
+        <!-- native 라이브러리 포함 (디렉토리가 없어도 실패하지 않음) -->
+        <fileSet>
+            <directory>${project.build.directory}/lib/native</directory>
+            <outputDirectory>lib/native</outputDirectory>
+            <includes>
+                <include>**/*.*</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>${standalone.dir}</directory>
+            <outputDirectory>logs</outputDirectory>
+            <excludes>
+                <exclude>*/**</exclude>
+            </excludes>
+        </fileSet>
+
+        <fileSet>
+            <directory>src/main/assembly/jdks/${jdk.folder}.windows</directory>
+            <outputDirectory>${jdk.folder}</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>src/main/resources</directory>
+            <outputDirectory>resources</outputDirectory>
+            <includes>
+                <include>**/*.*</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>${standalone.dir}/bin.window</directory>
+            <outputDirectory>bin</outputDirectory>
+            <includes>
+                <include>**/*.bat</include>
+                <include>**/*.cmd</include>
+            </includes>
+            <lineEnding>dos</lineEnding>
+        </fileSet>
+
+        <fileSet>
+            <directory>${standalone.dir}/bin.window</directory>
+            <outputDirectory>bin</outputDirectory>
+            <excludes>
+                <exclude>**/*.bat</exclude>
+                <exclude>**/*.cmd</exclude>
+            </excludes>
+        </fileSet>
+
+        <fileSet>
+            <directory>src/main/assembly/nssm-2.24/win64</directory>
+            <outputDirectory>bin/nssm-2.24</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+</assembly>

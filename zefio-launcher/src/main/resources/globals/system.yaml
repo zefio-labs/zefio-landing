@@ -1,0 +1,20 @@
+system:
+  hotdeploy: true
+  thread-pools:
+    scheduler:
+      fixedPoolSize: 5
+      threadNamePrefix: Shared-Scheduler
+    failsafe:
+      fixedPoolSize: 200
+      threadNamePrefix: Shared-Failsafe
+    io:
+      fixedPoolSize: 300
+      queueCapacity: 50000
+      threadNamePrefix: Shared-IO
+      autoScaling:
+        enabled: true
+        maxSize: 500
+        threshold: 0.5
+        checkInterval: 5
+        scaleUpStep: 50
+        scaleDownStep: 20

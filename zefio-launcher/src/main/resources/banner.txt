@@ -1,0 +1,10 @@
+ ______      __ _
+|___  /     / _(_)
+   / /  ___| |_ _  ___
+  / /  / _ \  _| |/ _ \
+./ /__|  __/ | | | (_) |
+\_____/\___|_| |_|\___/
+
+Running on Java Version : ${java.version}
+String-Boot Version : ${spring-boot.version}
+Zefio Version : ${application.version}

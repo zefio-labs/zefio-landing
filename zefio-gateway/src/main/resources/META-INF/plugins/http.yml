@@ -1,0 +1,30 @@
+modules:
+  - name: HttpIngress
+    type: ingress
+    className: io.zefio.gateway.http.HttpIngress
+    dtoClassName: io.zefio.gateway.http.dto.HttpIngressValues
+  - name: HttpsIngress
+    type: ingress
+    className: io.zefio.gateway.http.HttpsIngress
+    dtoClassName: io.zefio.gateway.http.dto.HttpsIngressValues
+  - name: HttpUpstream
+    type: upstream
+    className: io.zefio.gateway.http.HttpUpstream
+    dtoClassName: io.zefio.gateway.http.dto.HttpUpstreamValues
+  - name: HttpsUpstream
+    type: upstream
+    className: io.zefio.gateway.http.HttpsUpstream
+    dtoClassName: io.zefio.gateway.http.dto.HttpsUpstreamValues
+
+  - name: HttpHeaderValeSetter
+    type: interceptor
+    className: io.zefio.gateway.http.HttpHeaderValeSetter
+    dtoClassName: io.zefio.gateway.http.dto.HttpHeaderValeSetterValues
+  - name: FileDownloadFromMultipartByDto
+    type: interceptor
+    className: io.zefio.gateway.http.FileDownloadFromMultipartByDto
+    dtoClassName: io.zefio.gateway.http.dto.FileDownloadFromMultipartByDtoValues
+  - name: FileDownloadFromMultipart
+    type: interceptor
+    className: io.zefio.gateway.http.FileDownloadFromMultipart
+    dtoClassName: io.zefio.gateway.http.dto.FileDownloadFromMultipartValues

@@ -1,0 +1,50 @@
+flows:
+  - name: inbound
+    label: "5번_TCP_고대기열_중계"
+    options:
+      threadPool:
+        corePoolSize: 300
+        maxPoolSize: 500
+        queueCapacity: 0
+        autoScaling:
+          enabled: true
+          threshold: 0.5
+          checkInterval: 5
+          scaleUpStep: 50
+          scaleDownStep: 20
+      cpuQueue:
+        capacity: 100000
+      ioQueue:
+        capacity: 50000
+
+    # 🎯 수신부: 비동기(async, telegram matching)
+    ingress:
+      name: from
+      label: "소스 수신(51005)"
+      type: TcpIngress
+      telegram: fixed-standard
+      profile: ingress-async
+      exchangePattern: RequestReply
+      config:
+        port: 51005
+        requestEncoding: utf-8
+        responseEncoding: utf-8
+
+    # 🎯 송신부: 비동기(async, telegram matching) 10 Pool
+    steps:
+      - name: to
+        label: "타겟 요청(TCP_Small)"
+        type: TcpUpstream
+        telegram: fixed-standard
+        profile: upstream-async-standard
+        exchangePattern: RequestReply
+        retry:
+          enabled: false
+        config:
+          host: 192.168.3.218
+          port: 51105
+          requestEncoding: utf-8
+          responseEncoding: utf-8
+    on-error:
+      - error-type: ANY
+        refErrorHandler: fixederror

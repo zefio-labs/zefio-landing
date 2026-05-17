@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
+
+    <property name="LOG_DIR" value="${LOG_DIR:-../logs}" />
+    <property name="LOG_PATH_NAME" value="${LOG_DIR}/zefio.log" />
+    <property name="LOG_MONITOR_NAME" value="${LOG_DIR}/metric.log" />
+    <property name="LOG_STAT_NAME" value="${LOG_DIR}/stat.log" />
+
+    <springProfile name="dev">
+        <property name="APP_MAX_SIZE" value="200MB"/>
+        <property name="APP_MAX_HISTORY" value="1"/>
+        <property name="APP_TOTAL_CAP" value="2GB"/>
+        <property name="MON_MAX_SIZE" value="50MB"/>
+        <property name="MON_MAX_HISTORY" value="1"/>
+        <property name="MON_TOTAL_CAP" value="500MB"/>
+        <property name="STAT_MAX_SIZE" value="50MB"/>
+        <property name="STAT_MAX_HISTORY" value="1"/>
+        <property name="STAT_TOTAL_CAP" value="500MB"/>
+
+        <property name="ASYNC_QUEUE_SIZE" value="2048"/>
+        <property name="ASYNC_DISCARD_THRESHOLD" value="20"/>
+    </springProfile>
+
+    <springProfile name="prd">
+        <property name="APP_MAX_SIZE" value="100MB"/>
+        <property name="APP_MAX_HISTORY" value="60"/>
+        <property name="APP_TOTAL_CAP" value="5GB"/>
+        <property name="MON_MAX_SIZE" value="50MB"/>
+        <property name="MON_MAX_HISTORY" value="30"/>
+        <property name="MON_TOTAL_CAP" value="500MB"/>
+        <property name="STAT_MAX_SIZE" value="100MB"/>
+        <property name="STAT_MAX_HISTORY" value="30"/>
+        <property name="STAT_TOTAL_CAP" value="1GB"/>
+
+        <property name="ASYNC_QUEUE_SIZE" value="8192"/>
+        <property name="ASYNC_DISCARD_THRESHOLD" value="0"/>
+    </springProfile>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH_NAME}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH_NAME}.%d{yyyyMMdd}.%i</fileNamePattern>
+            <maxFileSize>${APP_MAX_SIZE}</maxFileSize>
+            <maxHistory>${APP_MAX_HISTORY}</maxHistory>
+            <totalSizeCap>${APP_TOTAL_CAP}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>[%d{HH:mm:ss.SSS}][%-5level][%thread][%-30.30logger{30}] - [TID:%X{TID}][FLOW:%X{FLOW}][CID:%X{CID}] %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>${ASYNC_QUEUE_SIZE}</queueSize>
+        <discardingThreshold>${ASYNC_DISCARD_THRESHOLD}</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="FILE" />
+    </appender>
+
+    <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>256</queueSize>
+        <includeCallerData>true</includeCallerData>
+        <appender-ref ref="CONSOLE" />
+    </appender>
+
+    <appender name="MONITOR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_MONITOR_NAME}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_MONITOR_NAME}.%d{yyyyMMdd}.%i</fileNamePattern>
+            <maxFileSize>${MON_MAX_SIZE}</maxFileSize>
+            <maxHistory>${MON_MAX_HISTORY}</maxHistory>
+            <totalSizeCap>${MON_TOTAL_CAP}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>[%d{HH:mm:ss.SSS}][%-5level][%thread][FLOW:%X{FLOW}][TID:%X{TID}] %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC_MONITOR_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="MONITOR_FILE" />
+    </appender>
+
+    <appender name="STAT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_STAT_NAME}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_STAT_NAME}.%d{yyyyMMdd}.%i</fileNamePattern>
+            <maxFileSize>${STAT_MAX_SIZE}</maxFileSize>
+            <maxHistory>${STAT_MAX_HISTORY}</maxHistory>
+            <totalSizeCap>${STAT_TOTAL_CAP}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>[STAT]|%msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC_STAT_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>8192</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="STAT_FILE" />
+    </appender>
+
+    <appender name="ERROR_COUNTING" class="io.zefio.core.telemetry.appender.ErrorCountingAppender" />
+
+    <logger name="sys.monitor" additivity="false">
+        <appender-ref ref="ASYNC_MONITOR_FILE" />
+    </logger>
+    <logger name="sys.stat" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_STAT_FILE" />
+    </logger>
+
+    <logger name="org.springframework.boot.SpringApplication" level="INFO" />
+    <logger name="org.quartz" level="OFF" />
+    <logger name="org.apache.ftpserver" level="ERROR" />
+
+    <springProfile name="dev">
+        <logger name="sys.monitor" level="WARN" />
+        <logger name="io.zefio" level="INFO" />
+
+        <root level="DEBUG">
+            <appender-ref ref="ERROR_COUNTING" />
+            <appender-ref ref="ASYNC_FILE" />
+            <appender-ref ref="ASYNC_CONSOLE" />
+        </root>
+    </springProfile>
+
+    <springProfile name="prd">
+        <logger name="sys.monitor" level="WARN" />
+
+        <logger name="io.zefio" level="INFO" />
+
+        <logger name="org.springframework" level="WARN" />
+        <logger name="org.apache" level="WARN" />
+        <logger name="io.netty" level="WARN" />
+        <logger name="com.zaxxer.hikari" level="WARN" />
+
+        <root level="INFO">
+            <appender-ref ref="ERROR_COUNTING" />
+            <appender-ref ref="ASYNC_FILE" />
+            <appender-ref ref="ASYNC_CONSOLE" />
+        </root>
+    </springProfile>
+
+    <include optional="true" resource="site-logback.xml" />
+
+</configuration>

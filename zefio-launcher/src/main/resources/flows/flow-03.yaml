@@ -1,0 +1,51 @@
+flows:
+  - name: inbound
+    label: "3번_TCP_TO_HTTP"
+    options:
+      threadPool:
+        corePoolSize: 200
+        maxPoolSize: 400
+        queueCapacity: 0
+        autoScaling:
+          enabled: true
+          threshold: 0.7
+          checkInterval: 5
+          scaleUpStep: 30
+          scaleDownStep: 10
+      cpuQueue:
+        capacity: 50000
+      ioQueue:
+        capacity: 20000
+
+    ingress:
+      name: from
+      label: "소스 수신(51003)"
+      type: TcpIngress
+      telegram: fixed-standard
+      profile: ingress-sync
+      exchangePattern: RequestReply
+      config:
+        port: 51003
+        requestEncoding: utf-8
+        responseEncoding: utf-8
+    steps:
+      - name: to
+        label: "타겟 요청(HTTP)"
+        type: HttpUpstream
+        telegram: fixed-standard
+        profile: upstream-sync-massive
+        exchangePattern: RequestReply
+        retry:
+          enabled: false
+        config:
+          host: 192.168.3.218
+          port: 51103
+          # 비즈니스 전용 HTTP 라우팅 속성
+          requestContentType: text/plain
+          requestHttpMethod: POST
+          requestPath: service/
+          requestEncoding: utf-8
+          responseEncoding: utf-8
+    on-error:
+      - error-type: ANY
+        refErrorHandler: fixederror

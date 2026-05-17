@@ -1,0 +1,154 @@
+telegrams:
+  # ========================================================================
+  # 🧱 [Group 1] Fixed (고정장) 전문
+  # 기존 Offset 방식 -> layout 메타데이터 정의 후 SpEL로 치환
+  # ========================================================================
+
+  # [Case 1] 표준 금융권 (8바이트 길이 헤더 + 오프셋 기반 ID 추출)
+  fixed-standard:
+    type: Fixed
+    config:
+      encodingIgnore: true
+      framing:
+        type: Length
+        lengthDataSize: 8
+        lengthDataInclude: false
+        lengthDataUpdate: true
+      correlation:
+        type: SpEL
+        expression: "#{body['GLOBAL_TRX_ID']}"
+      layout:
+        - { name: "DUMMY_HEADER",  length: 64 } # 기존 start: 64 를 건너뛰기 위한 헤더
+        - { name: "GLOBAL_TRX_ID", length: 32 } # 기존 length: 32 에 해당하는 핵심 식별자
+        # 🚀 [추가] 앞에 96바이트를 제외한 나머지 "모든" 데이터를 VAR_DATA로 보존!
+        - { name: "VAR_DATA", length: -1 }
+
+  # [Case 2] 망연계/대외계 전용 (프레이밍 없이 본문 전체를 1건으로 인식)
+  fixed-eof-sync:
+    type: Fixed
+    config:
+      encodingIgnore: true
+      framing:
+        type: EOF
+      correlation:
+        type: SpEL
+        expression: "#{body['SYSTEM_ID']}"
+      layout:
+        - { name: "SYSTEM_ID", length: 20 } # 0번 인덱스부터 20바이트 추출
+
+
+  # ========================================================================
+  # 📄 [Group 2] JSON 전문
+  # 기존 JsonPath / Key 방식 -> 안전한 대괄호[''] SpEL 문법으로 치환
+  # ========================================================================
+
+  # 🚀 [신규 추가] 일반적인 HTTP 통신용 표준 JSON (극악의 컴포지트 플로우 연동용)
+  json-standard:
+    type: JSON
+    config:
+      encodingIgnore: false
+      framing:
+        type: EOF  # HTTP 통신이므로 전체를 1건으로 인식
+      correlation:
+        type: SpEL
+        # 💡 [극악 방어] header 하위에 trxId가 있으면 쓰고, 없으면 UUID를 즉석에서 생성하여 부여!
+        expression: "#{body['header'] != null && body['header']['trxId'] != null ? body['header']['trxId'] : T(java.util.UUID).randomUUID().toString().replace('-', '')}"
+
+  # [Case 1] 현대적 RESTful API (HTTP 연동 전용)
+  json-rest-api:
+    type: JSON
+    config:
+      encodingIgnore: false
+      framing:
+        type: EOF
+      correlation:
+        # 💡 [v2.6 변경] JsonPath "$.commonHeader.globalTrxId" -> SpEL
+        # (안전 탐색: commonHeader가 없을 경우의 NullPointerException 방어)
+        type: SpEL
+        expression: "#{body['commonHeader'] != null ? body['commonHeader']['globalTrxId'] : null}"
+
+  # [Case 2] 변종 TCP JSON (JSON 바디 앞에 4바이트 길이 정보가 붙은 경우)
+  json-tcp-length:
+    type: JSON
+    config:
+      encodingIgnore: false
+      framing:
+        type: Length
+        lengthDataSize: 4
+        lengthDataUpdate: true
+      correlation:
+        # 💡 [v2.6 변경] JsonPath "$.guid" -> SpEL
+        type: SpEL
+        expression: "#{body['guid']}"
+
+  # [Case 3] IoT/로그 스트림 (JSON들이 줄바꿈(\n)으로 무수히 쏟아지는 경우)
+  json-stream-newline:
+    type: JSON
+    config:
+      encodingIgnore: false
+      framing:
+        type: Delimiter
+        delimiter: "\n"
+      correlation:
+        # 💡 [v2.6 변경] Key "traceId" -> SpEL
+        type: SpEL
+        expression: "#{body['traceId']}"
+
+
+  # ========================================================================
+  # 📝 [Group 3] XML 전문
+  # 기존 XPath 방식 -> Jackson XmlMapper가 파싱한 맵(Map) 구조를 SpEL로 탐색
+  # ========================================================================
+
+  # [Case 1] SOAP/Enterprise XML 연동 (XPath 기반 식별)
+  xml-standard-http:
+    type: XML
+    config:
+      encodingIgnore: false
+      framing:
+        type: EOF
+      correlation:
+        # 💡 [v2.6 변경] XPath "//Header/GlobalId/text()" -> SpEL
+        # 주의: Jackson XmlMapper는 일반적으로 최상위 루트 태그(예: <Envelope>)를 생략하고 자식 노드부터 Map으로 만듭니다.
+        type: SpEL
+        expression: "#{body['Header'] != null ? body['Header']['GlobalId'] : null}"
+
+  # [Case 2] TCP XML (특정 마감 태그 </MSG> 또는 기호 @@를 끝점으로 인식)
+  xml-tcp-delimiter:
+    type: XML
+    config:
+      encodingIgnore: false
+      framing:
+        type: Delimiter
+        delimiter: "</MSG>"
+      correlation:
+        # 💡 [v2.6 변경] XPath "//MSG/Body/TrxNo/text()" -> SpEL
+        # (최상위 <MSG> 태그가 무시된다고 가정 시, Body부터 탐색)
+        type: SpEL
+        expression: "#{body['Body'] != null ? body['Body']['TrxNo'] : null}"
+
+
+  # ========================================================================
+  # 🧪 [TEST] 단위 및 E2E 테스트 검증용 특수 전문
+  # ========================================================================
+  # 💡 식별자 자체가 Key가 됨 (v2.6 Map 구조)
+  fixed-http-req:
+    type: Fixed
+    config:
+      encodingIgnore: true
+      framing:
+        type: EOF
+        lengthDataSize: 8
+        lengthDataInclude: false
+        lengthDataUpdate: false
+      correlation:
+        # 🚀 [v2.6 핵심] Offset(64, 32) -> SpEL 대통합
+        type: SpEL
+        expression: "#{body['GLOBAL_TRX_ID']}"
+      layout:
+        # 🚀 [v2.6 핵심] FIXED_VALUE_MODIFIER가 offset: 3을 타겟팅하므로,
+        # 엔진이 정밀하게 인식하도록 바이트 레이아웃을 명세함
+        - { name: "PREFIX",        length: 3 }
+        - { name: "TARGET_VAL",    length: 3 } # Offset 3지점 (이 부분이 'XYZ'로 변환됨)
+        - { name: "DUMMY_HEADER",  length: 58 }
+        - { name: "GLOBAL_TRX_ID", length: 32 } # Offset 64지점 (SpEL 코릴레이션 타겟)
