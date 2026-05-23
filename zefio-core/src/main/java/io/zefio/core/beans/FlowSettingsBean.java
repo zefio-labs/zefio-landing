@@ -65,8 +65,13 @@ public class FlowSettingsBean implements InitializingBean, DisposableBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        this.flowServiceList.clear();
+        log.info("[DSL Loader] Initializing system...");
+        this.settings = loadConfiguration();
+        applyConfiguration(this.settings);
+    }
 
+    /** 💡 Load and parse current YAML configuration */
+    private FlowSettings loadConfiguration() throws Exception {
         String mainConfigPath = FlowConfigUtils.getMainConfigPath();
         log.info("[DSL Loader] Initializing Flow configuration from: {}", mainConfigPath);
 
@@ -75,59 +80,57 @@ public class FlowSettingsBean implements InitializingBean, DisposableBean {
 
         ObjectMapper mapper = new ObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        this.settings = mapper.convertValue(mergedYamlMap, FlowSettings.class);
+        return mapper.convertValue(mergedYamlMap, FlowSettings.class);
+    }
 
+    /** 💡 Apply configurations to engine components */
+    private void applyConfiguration(FlowSettings newSettings) {
         TelegramFactory.clear();
-        if (settings.getTelegrams() != null) {
-            settings.getTelegrams().forEach((name, config) -> {
-                try {
-                    TelegramFactory.register(name, config.getType(), config.getConfig());
-                } catch (Exception e) {
-                    log.error("[Telegram Init] Failed to register telegram: " + name, e);
-                }
+        if (newSettings.getTelegrams() != null) {
+            newSettings.getTelegrams().forEach((name, config) -> {
+                try { TelegramFactory.register(name, config.getType(), config.getConfig()); }
+                catch (Exception e) { log.error("[Telegram Init] Error: " + name, e); }
             });
         }
 
         SharedPools pools = sharedPoolManager.setupPools();
-
         monitorManager.startGlobalMonitoring(pools);
         monitorManager.printConfigurationLog();
 
-        if (settings.getFlows() != null) {
-            settings.getFlows().forEach(config -> {
+        if (newSettings.getFlows() != null) {
+            newSettings.getFlows().forEach(config -> {
                 PipelineService service = flowFactory.build(
-                        config,
-                        pools,
-                        settings.getProfiles(),
-                        settings.getGlobalErrors()
+                        config, pools, newSettings.getProfiles(), newSettings.getGlobalErrors()
                 );
-
-                if (service != null) {
-                    flowServiceList.add(service);
-                }
+                if (service != null) flowServiceList.add(service);
             });
+        }
+    }
+
+    /** 💡 Hot-Swap entry point for Redis Command Listener */
+    public synchronized void hotSwap(FlowSettings newSettings) {
+        log.info("🚀 Initiating Hot-Swap for pipeline...");
+        try {
+            // 1. Graceful shutdown of existing pipelines
+            destroy();
+            // 2. Apply new settings
+            this.settings = newSettings;
+            applyConfiguration(this.settings);
+            log.info("✅ Hot-Swap completed successfully.");
+        } catch (Exception e) {
+            log.error("❌ Critical failure during Hot-Swap", e);
         }
     }
 
     @Override
     public void destroy() throws Exception {
         log.info("Starting graceful shutdown for FlowSettingsBean...");
-
         if (!this.flowServiceList.isEmpty()) {
-            for (PipelineService flow : this.flowServiceList) {
-                flow.shutdown();
-            }
+            for (PipelineService flow : this.flowServiceList) { flow.shutdown(); }
             this.flowServiceList.clear();
         }
-
-        if (flowSyncBridge != null) {
-            flowSyncBridge.destroy();
-        }
-
-        if (sharedPoolManager != null) {
-            sharedPoolManager.destroy();
-        }
-
+        if (flowSyncBridge != null) flowSyncBridge.destroy();
+        if (sharedPoolManager != null) sharedPoolManager.destroy();
         ComponentRegistry.clear();
     }
 }

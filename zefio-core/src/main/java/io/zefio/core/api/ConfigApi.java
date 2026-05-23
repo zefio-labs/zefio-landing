@@ -2,19 +2,20 @@ package io.zefio.core.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.zefio.core.annotation.AIOpsTuning;
 import io.zefio.core.beans.DynamicSchemaLoader;
 import io.zefio.core.common.base.PluginMeta;
 import io.zefio.core.common.base.PluginType;
+import io.zefio.core.config.flow.FlowSettings;
+import io.zefio.core.telemetry.cp.ZefioCpRedisPublisher;
 import io.zefio.jdk.annotation.ZefioNotBlank;
 import io.zefio.jdk.annotation.ZefioNotEmpty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,37 +28,53 @@ import java.util.*;
  * REST Controller responsible for providing endpoints to retrieve configuration metadata,
  * plugin details, and dynamically extracted schema information from DTO classes using reflection.
  */
-@RefreshScope
+@Slf4j
 @RestController
 @RequestMapping("/base/config")
 public class ConfigApi {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
-    protected final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory())
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @Autowired
     private DynamicSchemaLoader yamlFilterLoader;
 
-    public ConfigApi() {
-        mapper.findAndRegisterModules();
-        mapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
-        mapper.enable(SerializationFeature.INDENT_OUTPUT);
-    }
+    @Autowired
+    private ZefioCpRedisPublisher redisPublisher;
 
-//    @PostMapping(value = "/reload", consumes = "application/x-yaml")
-//    public ResponseEntity<?> reloadConfig(@RequestBody String yaml) {
-//        try {
-//            // 1. Parse and Validate using our DTOs (e.g., HttpIngressValues)
-//            FlowDefinition newFlows = dslLoader.parse(yaml);
-//
-//            // 2. Hot-Swap SEDA Pipeline
-//            sedaContext.reload(newFlows);
-//
-//            return ResponseEntity.ok(Map.of("status", "SUCCESS", "message", "Pipeline hot-swapped"));
-//        } catch (Exception e) {
-//            return ResponseEntity.badRequest().body(Map.of("status", "FAIL", "reason", e.getMessage()));
-//        }
-//    }
+    @PostMapping(value = "/reload", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> reloadConfig(@RequestBody Map<String, String> payload) {
+        try {
+            String yamlContent = payload.get("yaml");
+            String targetGroup = payload.getOrDefault("targetGroup", "main");
+
+            // 1. Fail-Fast Validation: Ensure the YAML conforms to FlowSettings DTO
+            yamlMapper.readValue(yamlContent, FlowSettings.class);
+
+            // 2. Broadcast to all DP nodes via Redis
+            log.info("[DP-Seed] Validation passed. Broadcasting command to group: {}", targetGroup);
+
+            Map<String, Object> command = new HashMap<>();
+            command.put("type", "command");
+            command.put("action", "hot-reload");
+            command.put("targetGroup", targetGroup);
+            command.put("payload", Collections.singletonMap("yaml", yamlContent));
+
+            redisPublisher.sendCommand(command);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "SUCCESS");
+            response.put("message", "Broadcasted to cluster");
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("[DP-Seed] Validation Failed", e);
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("status", "FAIL");
+            errorResponse.put("reason", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
 
     @GetMapping(value = "")
     public Object getConfig(@RequestParam(name = "moduleName", required = false) String moduleName,
