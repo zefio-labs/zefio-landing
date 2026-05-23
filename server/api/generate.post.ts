@@ -3,6 +3,7 @@ import { defineEventHandler, readBody } from 'h3'
 import { useRuntimeConfig, useStorage } from '#imports'
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai'
 import OpenAI from 'openai'
+import yaml from 'js-yaml'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -15,18 +16,64 @@ export default defineEventHandler(async (event) => {
 
   try {
     // ====================================================================
-    // 1. Common System Prompt (AIOps Rules)
+    // 1. Zefio DSL Grammar & AIOps Rules (Deduplicated & Optimized)
     // ====================================================================
     const systemInstruction = `
-You are 'Zefio AI Architect', an expert assistant for the SEDA Engine.
-Your primary goal is to help users build and modify YAML pipeline configurations.
+You are 'Zefio AI Architect', an expert configuring the Zefio SEDA Engine.
+Your ONLY goal is to generate valid JSON configurations that strictly follow the Zefio Domain Specific Language (DSL).
 
-CRITICAL RULES:
-1. If the user asks about plugins (e.g., "What Ingresses are available?", "알려줘"), use 'get_plugin_registry' to answer conversationally.
-2. If the user asks to modify an existing flow, YOU MUST use 'get_flow_list' and 'get_flow_detail' to read the current runtime structure before generating YAML.
-3. If the user mentions profiles or telegrams, use 'get_global_topology' to check the available dictionary. 
-4. IMPORTANT: When setting 'telegram' or 'profile' in a flow, use the exact Key string from the globals dictionary. DO NOT inline/copy the global schema inside the flow YAML. Maintain the reference structure.
-5. If the user asks to create or generate a pipeline, output ONLY valid YAML. No markdown blocks like \`\`\`yaml, no conversational text.
+[1. CORE GRAMMAR, SKELETON & ORDERING (CRITICAL)]
+- Root Structure: The configuration MUST ALWAYS start with a "flows" array.
+- Key Ordering: Inside a flow object, you MUST strictly output keys in this exact order: 'name', 'label', 'options', 'ingress', 'steps', 'on-error'.
+- Naming Convention: You MUST ALWAYS use 'type' (for the module name) and 'config' (for properties).
+- Base Skeleton format MUST EXACTLY match this nested structure:
+{
+  "flows": [
+    {
+      "name": "your-flow-name",
+      "label": "Flow Description",
+      "options": {
+        "threadPool": { "corePoolSize": 100, "maxPoolSize": 200, "queueCapacity": 1000 },
+        "cpuQueue": { "capacity": 10000 },
+        "ioQueue": { "capacity": 5000 }
+      },
+      "ingress": { "type": "HttpIngress", "config": { ... } },
+      "steps": [ { "type": "SpELModifierInterceptor", "config": { ... } } ],
+      "on-error": [ { "error-type": "ANY", "refErrorHandler": "fixederror" } ]
+    }
+  ]
+}
+
+[2. SEDA INFRASTRUCTURE SIZING RULES (CRITICAL)]
+You MUST output the 'options' object EXACTLY as a nested JSON object (like the skeleton above). Do NOT use dot-notation (like threadPool.queueCapacity).
+1. Mass Traffic / High-Throughput Sync Profile:
+   - threadPool: corePoolSize 200~1000, maxPoolSize 400~2000, queueCapacity 0~100
+   - cpuQueue: capacity 50000
+   - ioQueue: capacity 20000
+   - autoScaling: { "enabled": true, "threshold": 0.7, "checkInterval": 5, "scaleUpStep": 30, "scaleDownStep": 10 }
+2. Spike Buffer / Asynchronous Ingress Profile:
+   - threadPool: corePoolSize 1000, maxPoolSize 2000, queueCapacity 2000
+   - cpuQueue: capacity 10000
+   - ioQueue: capacity 5000
+   - autoScaling: { "enabled": true, "threshold": 0.5, "checkInterval": 5, "scaleUpStep": 2, "scaleDownStep": 1 }
+3. Standard / Sub-Flow Profile:
+   - threadPool: corePoolSize 10~50, maxPoolSize 20~100, queueCapacity 50~100
+
+[3. RECURSIVE CONTROL FLOW RULES (CRITICAL WARNING)]
+- If type == "SWITCH": MUST contain a 'cases' array. Each case is an object with 'condition' (SpEL string) and 'steps' (array). MAY contain 'defaultSteps' (array). 
+- WARNING: Do NOT use 'SpELRouterInterceptor' for branching logic that contains 'steps'. You MUST use type "SWITCH" for any conditional branching.
+- If type == "TRY_SCOPE": MUST contain a 'steps' array. MAY contain 'fallback-steps' (array), 'retry', 'on-error'.
+- If type == "SCATTER_GATHER": MUST contain a 'steps' array (each step represents a parallel branch).
+
+[4. TOOL USAGE & REFERENCE RULES (STOP AND SEARCH)]
+- NEVER guess the 'type' names (e.g., do not invent 'Parallel' or 'HttpCall'). You MUST proactively call 'get_plugin_registry' to use the exact supported Zefio classes (e.g., 'SCATTER_GATHER', 'DynamicLocalUpstream').
+- The 'telegram' and 'profile' fields MUST be exact string keys matching the Global Topology via 'get_global_topology'. DO NOT inline global configurations.
+- If modifying existing flows, ALWAYS use 'get_flow_list' and 'get_flow_detail' first.
+
+[5. STRICT OUTPUT FORMAT]
+- Output ONLY a raw JSON object.
+- Do NOT wrap the output in markdown code blocks like \`\`\`json.
+- Do NOT add any conversational text before or after the JSON.
 `
     let finalContent = ''
 
@@ -165,7 +212,7 @@ CRITICAL RULES:
         const model = genAI.getGenerativeModel({ 
           model: "gemini-2.5-flash", 
           systemInstruction,
-          tools: geminiTools 
+          tools: geminiTools
         })
 
         const chat = model.startChat()
@@ -222,6 +269,7 @@ CRITICAL RULES:
         messages: messages,
         tools: openaiTools,
         tool_choice: "auto",
+        response_format: { type: "json_object" }
       })
 
       let responseMessage = response.choices[0].message
@@ -255,10 +303,45 @@ CRITICAL RULES:
     }
 
     // ====================================================================
-    // 4. Post-processing (YAML Cleansing)
+    // 4. Post-processing (Bulletproof JSON to YAML)
     // ====================================================================
     if (!body.prompt.includes("알려줘") && !body.prompt.includes("뭐야") && !body.prompt.includes("있어")) {
-      finalContent = finalContent.replace(/```yaml\n?/gi, '').replace(/```\n?/g, '').trim()
+      try {
+        let jsonStr = finalContent;
+        
+        // 🚀 [V2 스나이퍼 추출기] 단순 '{' 가 아니라, Zefio 스키마의 핵심인 '"flows"' 키워드를 찾습니다.
+        const flowsKeywordIndex = jsonStr.indexOf('"flows"');
+        
+        if (flowsKeywordIndex !== -1) {
+          // 1. "flows" 키워드 바로 앞에 있는 가장 가까운 '{' 를 시작점으로 잡습니다. (가짜 JSON 무시)
+          const startIndex = jsonStr.lastIndexOf('{', flowsKeywordIndex);
+          // 2. 전체 텍스트에서 가장 마지막에 있는 '}' 를 끝점으로 잡습니다.
+          const endIndex = jsonStr.lastIndexOf('}');
+
+          if (startIndex !== -1 && endIndex !== -1) {
+            jsonStr = jsonStr.substring(startIndex, endIndex + 1);
+            
+            // 3. 추출된 순수 JSON 파싱
+            const jsonObject = JSON.parse(jsonStr);
+            
+            // 4. 깔끔한 YAML로 변환
+            finalContent = yaml.dump(jsonObject, { indent: 2, skipInvalid: true });
+          } else {
+            throw new Error("Could not find valid JSON boundaries.");
+          }
+        } else {
+          throw new Error("No 'flows' keyword found in AI response.");
+        }
+
+      } catch (parseError: any) {
+        console.error('[Zefio AI] JSON to YAML parsing failed. Raw content was:\n', finalContent);
+        // 파싱에 실패하면 UI에 원본 텍스트라도 보여주도록 예외 처리
+        return { 
+          status: 500, 
+          yaml: finalContent, 
+          message: `AI generated invalid format: ${parseError.message}` 
+        }
+      }
     }
 
     return {

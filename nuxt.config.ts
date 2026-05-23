@@ -65,7 +65,8 @@ export default defineNuxtConfig({
     
     // Local Fallback (Ollama)
     ollamaBaseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1',
-    ollamaModel: process.env.OLLAMA_MODEL || 'gemma4:e4b',
+    // ollamaModel: process.env.OLLAMA_MODEL || 'gemma4:e4b',
+    ollamaModel: process.env.OLLAMA_MODEL || 'qwen2.5-coder:7b',
     
     public: {}
   },

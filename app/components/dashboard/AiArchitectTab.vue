@@ -137,7 +137,7 @@ const generateYaml = async () => {
       body: { prompt: aiPrompt.value }
     })
 
-    if (res.status === 200 && res.yaml) {
+    if (res.status === 200 && res.yaml !== undefined) {
       generatedYaml.value = res.yaml
     } else {
       alert(`[AI Error] ${res.message}`)
