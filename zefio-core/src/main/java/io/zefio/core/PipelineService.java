@@ -18,6 +18,8 @@ public interface PipelineService extends IMetricsResettable {
     /** Dispatches the payload into the execution pipeline. */
     void dispatch(Payload payload);
 
+    String getName();
+
     /** Returns the Ingress module associated with this pipeline. */
     Ingress getIngress();
 }

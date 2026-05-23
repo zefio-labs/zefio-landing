@@ -279,6 +279,11 @@ public class FlowService implements PipelineService {
     }
 
     @Override
+    public String getName() {
+        return this.flowName;
+    }
+
+    @Override
     public Ingress getIngress() {
         return this.ingress;
     }

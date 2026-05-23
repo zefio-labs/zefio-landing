@@ -111,11 +111,32 @@ public class FlowSettingsBean implements InitializingBean, DisposableBean {
     public synchronized void hotSwap(FlowSettings newSettings) {
         log.info("🚀 Initiating Hot-Swap for pipeline...");
         try {
-            // 1. Graceful shutdown of existing pipelines
+            // 1. Graceful shutdown
             destroy();
-            // 2. Apply new settings
+
+            // 2. Defensive check: If new settings lack telegrams, try to retain or reload
+            if (newSettings.getTelegrams() == null || newSettings.getTelegrams().isEmpty()) {
+                log.warn("⚠️ Deployment payload missing 'telegrams'. Falling back to existing configuration.");
+                // Keep the current settings' telegrams if the new ones are empty
+                if (this.settings != null && this.settings.getTelegrams() != null) {
+                    newSettings.setTelegrams(this.settings.getTelegrams());
+                }
+            }
+
+            // 3. Re-apply configurations (this calls factory.build() -> initialise())
             this.settings = newSettings;
             applyConfiguration(this.settings);
+
+            // 4. Manually start the new pipelines
+            for (PipelineService flowService : this.flowServiceList) {
+                try {
+                    flowService.start(); // Open the ingress valve
+                    log.info("[Hot-Swap] Flow started: {}", flowService.getName());
+                } catch (Exception e) {
+                    log.error("[Hot-Swap] Failed to start flow: {}", flowService.getName(), e);
+                }
+            }
+
             log.info("✅ Hot-Swap completed successfully.");
         } catch (Exception e) {
             log.error("❌ Critical failure during Hot-Swap", e);

@@ -29,6 +29,7 @@ zefio:
   # Control Plane (CP) Telemetry Configuration
   # ==========================================
   cp:
+    api-url: http://192.168.0.11:3000
     enabled: true
     redis:
       url: redis://192.168.0.41:6379/0

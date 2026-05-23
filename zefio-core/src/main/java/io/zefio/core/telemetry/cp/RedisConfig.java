@@ -24,6 +24,8 @@ public class RedisConfig {
             poolConfig.setMaxTotal(16);
             poolConfig.setMaxIdle(8);
             poolConfig.setMinIdle(2);
+            poolConfig.setTestWhileIdle(true);
+            poolConfig.setTimeBetweenEvictionRunsMillis(30000);
 
             return new JedisPool(poolConfig, redisUri);
         } catch (Exception e) {
