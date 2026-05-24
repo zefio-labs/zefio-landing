@@ -14,11 +14,11 @@ export default defineEventHandler(async (event) => {
     if (!pluginData) {
       throw createError({
         statusCode: 404,
-        statusMessage: `[Zefio CP] Plugin schema for '${pluginName}' not found. Please check if DP sync is completed.`
+        // 💡 Message updated to reflect the Push-based architecture
+        statusMessage: `[Zefio CP] Schema for '${pluginName}' not found. Ensure the Zefio Engine (DP) has completed its Bootstrap Handshake.`
       })
     }
     
-    // Return stored metadata and DTO for AI consumption
     return pluginData
   } 
   
@@ -27,15 +27,14 @@ export default defineEventHandler(async (event) => {
     const masterRegistry: any = await storage.getItem('zefio:registry:master')
     
     if (!masterRegistry) {
-      // Failsafe for when DP is still booting or not yet synchronized
+      // Failsafe for when DP is still booting and hasn't pushed templates yet
       return {
-        status: 'syncing',
-        message: 'Schema registry is currently empty or syncing with DP.',
+        status: 'awaiting_push',
+        message: 'Registry is empty. Waiting for DP to push Master Templates on startup.',
         plugins: []
       }
     }
 
-    // Return the index of currently available plugins to the AI
     return {
       status: 'ready',
       count: masterRegistry.length,

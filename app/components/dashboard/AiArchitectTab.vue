@@ -31,9 +31,31 @@
         <h2 class="text-sm font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
           <Icon name="ph:robot-fill" class="w-5 h-5 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]" /> Zefio AIOps Assistant
         </h2>
-        <span class="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-2 backdrop-blur-md">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span> Context Synced
-        </span>
+        
+        <div class="flex items-center gap-3">
+          <button 
+            @click="triggerManualSync" 
+            :disabled="isSyncing"
+            class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg text-slate-300 transition font-bold border border-white/10 flex items-center gap-1.5 backdrop-blur-md disabled:opacity-50"
+            title="Force cluster to re-push templates"
+          >
+            <Icon :name="isSyncing ? 'ph:spinner-gap-bold' : 'ph:arrows-clockwise-bold'" :class="{ 'animate-spin': isSyncing }" class="w-4 h-4" />
+            {{ isSyncing ? 'SYNCING...' : 'SYNC' }}
+          </button>
+
+          <span class="text-xs px-3 py-1.5 rounded-full border flex items-center gap-2 backdrop-blur-md transition-colors duration-300"
+                :class="syncStatus === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                        syncStatus === 'error' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 
+                        'bg-amber-500/10 text-amber-400 border-amber-500/20'">
+            <span class="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor] animate-pulse"
+                  :class="syncStatus === 'success' ? 'bg-emerald-400' : 
+                          syncStatus === 'error' ? 'bg-rose-400' : 
+                          'bg-amber-400'"></span>
+            {{ syncStatus === 'success' ? 'Context Synced' : 
+               syncStatus === 'error' ? 'Sync Failed' : 
+               'Awaiting Sync' }}
+          </span>
+        </div>
       </div>
       
       <textarea 
@@ -81,12 +103,17 @@ import { ref } from 'vue'
 
 const emit = defineEmits(['deploy-success'])
 
+// Form & State Variables
 const aiPrompt = ref('')
 const isGenerating = ref(false)
 const generatedYaml = ref('')
 const isDeploying = ref(false)
 
-// 🚀 Industry-diverse pre-defined template options
+// Sync State Management
+const isSyncing = ref(false)
+const syncStatus = ref<'idle' | 'success' | 'error'>('success') // Defaulting to success assuming CP received templates on startup
+
+// Pre-defined Industry Templates
 const industryPresets = [
   {
     id: 'ai-ops',
@@ -122,8 +149,35 @@ const industryPresets = [
   }
 ]
 
+// Handlers
 const selectPreset = (prompt: string) => {
   aiPrompt.value = prompt
+}
+
+const triggerManualSync = async () => {
+  if (!confirm('Broadcast sync command to all DP nodes? This will force them to re-push their Master Templates.')) return
+  
+  isSyncing.value = true
+  syncStatus.value = 'idle'
+  
+  try {
+    const res: any = await $fetch('/api/sync', { method: 'POST' })
+    
+    if (res.status === 200) {
+      // Allow slight delay for asynchronous Redis broadcast and DP Webhook push
+      setTimeout(() => {
+        syncStatus.value = 'success'
+      }, 1500)
+    } else {
+      syncStatus.value = 'error'
+      alert(`[Sync Error] ${res.message}`)
+    }
+  } catch (e: any) {
+    syncStatus.value = 'error'
+    alert(`[Network Error] Failed to reach Control Plane to execute sync command.`)
+  } finally {
+    isSyncing.value = false
+  }
 }
 
 const generateYaml = async () => {
@@ -137,13 +191,15 @@ const generateYaml = async () => {
       body: { prompt: aiPrompt.value }
     })
 
-    if (res.status === 200 && res.yaml !== undefined) {
+    if (res.status === 200 && res.yaml) {
       generatedYaml.value = res.yaml
     } else {
-      alert(`[AI Error] ${res.message}`)
+      // Catch backend semantic errors (e.g., DP templates are missing)
+      alert(`[AI Generation Failed] ${res.message || 'Unknown Error'}`)
     }
   } catch (e: any) {
-    alert('[Connection Error] AI Service is temporarily unavailable.')
+    // Provide clearer feedback if the API endpoint crashes completely
+    alert(`[Service Error] AI Architect is unavailable. Error: ${e.message}`)
   } finally {
     isGenerating.value = false
   }
@@ -158,7 +214,7 @@ const copyYaml = () => {
 
 const deployYaml = async () => {
   if (!generatedYaml.value) return
-  if (!confirm('CAUTION: Deploying this YAML will perform a Zero-Downtime Hot-Reload on the engine. Proceed?')) return
+  if (!confirm('CAUTION: Deploying this YAML will perform a Zero-Downtime Hot-Reload on the cluster. Proceed?')) return
 
   isDeploying.value = true
   try {
@@ -170,8 +226,8 @@ const deployYaml = async () => {
     
     emit('deploy-success')
     
-  } catch (e) {
-    alert('Deployment failed. Ensure engine (DP) is reachable on Port 52001.')
+  } catch (e: any) {
+    alert(`Deployment failed. Ensure engine (DP) is reachable via Redis. Error: ${e.message}`)
   } finally {
     isDeploying.value = false
   }

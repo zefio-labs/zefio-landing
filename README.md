@@ -18,9 +18,10 @@ Experience the Zefio Console in action through our live demonstration environmen
 
 ## Key Features
 
-* **Real-Time Cluster Telemetry:** Monitor distributed Data Plane (DP) nodes in real-time. View JVM stats, TPS, SEDA stage pools, and connection pools across heterogeneous environments (e.g., Local Desktop + Raspberry Pi) via WebSockets and Redis Pub/Sub.
+* **Event-Driven Architecture (Fully Decoupled):** The CP acts as a passive, stateless orchestrator. It receives Immutable Master Templates pushed by the Data Plane via Webhooks and broadcasts Hot-Reload commands purely through Redis Pub/Sub.
+* **Real-Time Cluster Telemetry:** Monitor distributed Data Plane (DP) nodes in real-time. View JVM stats, TPS, SEDA stage pools, and connection pools across heterogeneous environments (e.g., Local Desktop + Raspberry Pi) via WebSockets and Redis.
 * **AI-Powered Pipeline Designer (AIOps):** Automatically generate complex integration flows (Scatter-Gather, Fail-Fast, Dynamic Routing) using natural language. Supports Google Gemini, OpenAI, and Local Ollama.
-* **Schema-Aware Intelligence:** The AI architect synchronizes with the DP nodes to read actual plugin registries, DTO schemas, and global topologies, ensuring generated YAMLs are 100% compliant with your runtime environment.
+* **Schema-Aware Intelligence:** The AI architect utilizes the exact plugin registries, DTO schemas, and global topologies pushed by the engine's Bootstrap Handshake, ensuring generated YAMLs are 100% compliant with your runtime environment.
 * **Zero-Downtime Hot Reload:** Push generated YAML configurations directly from the web console to the Zefio Engine cluster without restarting the servers.
 * **Modern UI/UX:** A fully responsive, dark-themed, glassmorphism design optimized for enterprise monitoring and developer experience.
 
@@ -51,7 +52,7 @@ Ensure you have the following installed on your system:
 Clone the repository and install the dependencies:
 
 ```bash
-git clone https://github.com/zefio-labs/zefio-landing.git
+git clone [https://github.com/zefio-labs/zefio-landing.git](https://github.com/zefio-labs/zefio-landing.git)
 cd zefio-landing
 pnpm install
 ```
@@ -66,10 +67,10 @@ cp .env.example .env
 Open `.env` and configure it according to your environment. (See the **Configuration** section below for details).
 
 ### 4. Run the Development Server
-Start the Nuxt development server:
+Start the Nuxt development server (Listen on all interfaces to allow DP Webhook connections):
 
 ```bash
-pnpm dev
+pnpm dev --host 0.0.0.0
 ```
 Navigate to `http://localhost:3000` in your browser to view the landing page and access the Zefio Console.
 
@@ -79,13 +80,12 @@ Navigate to `http://localhost:3000` in your browser to view the landing page and
 
 The application uses environment variables to dynamically connect to the Zefio Engine cluster and AI providers. Modify your `.env` file as needed:
 
-* `DP_API_URL`: The HTTP endpoint of your primary Zefio Engine (Data Plane) for schema synchronization. (e.g., `http://localhost:52001` or your custom domain/IP).
-* `REDIS_URL`: The Redis connection string used for Control Plane Pub/Sub and telemetry aggregation.
+* `REDIS_URL`: The Redis connection string used as the cluster communication backbone (Telemetry & Hot-Reload commands).
 * `AI_PROVIDER`: Choose your AI engine for the Pipeline Designer (`gemini` or `openai`).
 * `GEMINI_API_KEY`: Your Google Gemini API key.
 * `OPENAI_API_KEY`: Your OpenAI API key.
 * `OLLAMA_BASE_URL`: (Optional) The base URL for a local Ollama instance if using local models as a fallback.
-* `OLLAMA_MODEL`: (Optional) The specific Ollama model to use (e.g., `gemma4:e4b`).
+* `OLLAMA_MODEL`: (Optional) The specific Ollama model to use (e.g., `qwen2.5-coder:7b`).
 
 > **💡 Note on AI Providers & Rate Limits** > The current public beta utilizes the free tiers of Google Gemini and OpenAI for the AI-Powered Pipeline Designer, which may be subject to temporary rate limits or daily API quota restrictions.
 > 
@@ -98,7 +98,8 @@ The application uses environment variables to dynamically connect to the Zefio E
 * `components/`: Vue components for the Landing Page and Dashboard UI.
 * `pages/`: Nuxt file-based routing (e.g., `index.vue` for landing, `dashboard.vue` for console).
 * `server/api/`: Nitro server endpoints handling AI generation (`generate.post.ts`), deployment (`deploy.post.ts`), and WebSocket connections (`ws.ts`).
-* `server/utils/`: Core backend logic for Redis cluster aggregation and DP synchronization.
+* `server/api/sync/`: Contains the Webhook receiver (`templates.post.ts`) that listens for the DP's Bootstrap Handshake.
+* `server/utils/`: Core backend logic for Redis cluster aggregation.
 * `stores/`: Pinia stores for managing real-time WebSocket telemetry data across the UI.
 * `assets/css/`: Global stylesheets including custom Tailwind animations and glassmorphism utilities.
 

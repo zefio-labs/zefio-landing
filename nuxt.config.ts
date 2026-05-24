@@ -36,6 +36,11 @@ export default defineNuxtConfig({
     }
   },
   
+  devServer: {
+    host: '0.0.0.0',
+    port: 3000
+  },
+  
   nitro: {
     output: {
       // Gather all build outputs into a top-level deploy folder
@@ -55,8 +60,8 @@ export default defineNuxtConfig({
 
   // Environment variable mapping
   runtimeConfig: {
-    // DP Address Mapping (Default fallback to localhost)
-    dpApiUrl: process.env.DP_API_URL || 'http://localhost:52001',
+    // 💡 Redis is the ONLY connection CP needs to reach the cluster
+    redisUrl: process.env.REDIS_URL || 'redis://localhost:6379/0',
 
     // AI Provider Mapping
     aiProvider: process.env.AI_PROVIDER || 'gemini',
