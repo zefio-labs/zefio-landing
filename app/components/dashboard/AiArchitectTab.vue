@@ -1,13 +1,13 @@
 <template>
   <div class="max-w-5xl mx-auto h-full flex flex-col animate-[fadeIn_0.3s_ease-out]">
     <div class="mb-6">
-      <h2 class="text-2xl font-black text-white text-glow">Pipeline Designer</h2>
-      <p class="text-sm text-slate-400 mt-1">Design and deploy Zefio integration flows using Schema-Aware AI across various industries.</p>
+      <h2 class="text-2xl font-black text-white text-glow">{{ t.architect.title }}</h2>
+      <p class="text-sm text-slate-400 mt-1">{{ t.architect.subtitle }}</p>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <div 
-        v-for="preset in industryPresets" 
+        v-for="preset in t.architect.presets" 
         :key="preset.id"
         @click="selectPreset(preset.prompt)"
         class="p-4 bg-black/40 border border-white/5 rounded-xl cursor-pointer hover:border-blue-500/50 hover:bg-blue-500/5 transition-all duration-300 group relative overflow-hidden shadow-sm"
@@ -29,7 +29,7 @@
       
       <div class="flex items-center justify-between mb-6 relative z-10">
         <h2 class="text-sm font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
-          <Icon name="ph:robot-fill" class="w-5 h-5 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]" /> Zefio AIOps Assistant
+          <Icon name="ph:robot-fill" class="w-5 h-5 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]" /> {{ t.architect.assistant }}
         </h2>
         
         <div class="flex items-center gap-3">
@@ -40,7 +40,7 @@
             title="Force cluster to re-push templates"
           >
             <Icon :name="isSyncing ? 'ph:spinner-gap-bold' : 'ph:arrows-clockwise-bold'" :class="{ 'animate-spin': isSyncing }" class="w-4 h-4" />
-            {{ isSyncing ? 'SYNCING...' : 'SYNC' }}
+            {{ isSyncing ? t.architect.syncingBtn : t.architect.syncBtn }}
           </button>
 
           <span class="text-xs px-3 py-1.5 rounded-full border flex items-center gap-2 backdrop-blur-md transition-colors duration-300"
@@ -51,16 +51,16 @@
                   :class="syncStatus === 'success' ? 'bg-emerald-400' : 
                           syncStatus === 'error' ? 'bg-rose-400' : 
                           'bg-amber-400'"></span>
-            {{ syncStatus === 'success' ? 'Context Synced' : 
-               syncStatus === 'error' ? 'Sync Failed' : 
-               'Awaiting Sync' }}
+            {{ syncStatus === 'success' ? t.architect.syncStatus.success : 
+               syncStatus === 'error' ? t.architect.syncStatus.error : 
+               t.architect.syncStatus.awaiting }}
           </span>
         </div>
       </div>
       
       <textarea 
         v-model="aiPrompt" 
-        placeholder="Select a preset template above or enter your custom requirements here... (e.g., Route incoming TCP traffic to Kafka)" 
+        :placeholder="t.architect.promptPlaceholder" 
         class="w-full relative z-10 bg-black/40 border border-white/10 text-slate-200 placeholder-slate-600 p-5 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none mb-6 min-h-[120px] resize-none shadow-inner transition-all duration-300"
       ></textarea>
       
@@ -71,22 +71,22 @@
       >
         <Icon v-if="isGenerating" name="ph:spinner-gap-bold" class="w-5 h-5 animate-spin" />
         <Icon v-else name="ph:magic-wand-bold" class="w-5 h-5" />
-        {{ isGenerating ? 'Consulting AI Architect...' : 'Generate Pipeline YAML' }}
+        {{ isGenerating ? t.architect.generatingBtn : t.architect.generateBtn }}
       </button>
 
       <div v-if="generatedYaml" class="mt-8 flex-1 flex flex-col min-h-0 animate-[slideUp_0.3s_ease-out] relative z-10">
         <div class="flex justify-between items-center mb-3">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <Icon name="ph:code-block-bold" class="w-4 h-4 text-emerald-400" /> Generated Configuration
+            <Icon name="ph:code-block-bold" class="w-4 h-4 text-emerald-400" /> {{ t.architect.configTitle }}
           </span>
           <div class="flex gap-2">
             <button @click="copyYaml" class="text-xs bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg text-slate-300 transition font-bold border border-white/10 flex items-center gap-2 backdrop-blur-md">
-              <Icon name="ph:copy-bold" class="w-4 h-4" /> COPY
+              <Icon name="ph:copy-bold" class="w-4 h-4" /> {{ t.architect.copyBtn }}
             </button>
             <button @click="deployYaml" :disabled="isDeploying" class="text-xs bg-emerald-600/80 hover:bg-emerald-500 disabled:bg-slate-700 disabled:border-slate-600 px-4 py-2 rounded-lg text-white transition font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.3)] border border-emerald-500/50 backdrop-blur-md">
               <Icon v-if="isDeploying" name="ph:spinner-gap-bold" class="w-4 h-4 animate-spin" />
               <Icon v-else name="ph:rocket-launch-bold" class="w-4 h-4" />
-              {{ isDeploying ? 'DEPLOYING...' : 'PUSH TO ENGINE' }}
+              {{ isDeploying ? t.architect.deployingBtn : t.architect.deployBtn }}
             </button>
           </div>
         </div>
@@ -100,6 +100,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useTranslations } from '@/composables/useTranslations' // 실제 경로에 맞게 수정해주세요
+
+// i18n Composable 호출
+const { t } = useTranslations()
 
 const emit = defineEmits(['deploy-success'])
 
@@ -111,43 +115,9 @@ const isDeploying = ref(false)
 
 // Sync State Management
 const isSyncing = ref(false)
-const syncStatus = ref<'idle' | 'success' | 'error'>('success') // Defaulting to success assuming CP received templates on startup
+const syncStatus = ref<'idle' | 'success' | 'error'>('success')
 
-// Pre-defined Industry Templates
-const industryPresets = [
-  {
-    id: 'ai-ops',
-    industry: 'AI & MLOps',
-    icon: 'ph:robot-duotone',
-    title: 'Multi-LLM Router',
-    desc: 'Parallel execution router for OpenAI and Gemini with automatic fail-fast compensation.',
-    prompt: 'Route incoming prompt tokens parallelly to OpenAI and Gemini API upstreams. If any provider experiences latency over 2000ms, immediately trigger FAIL_FAST and shift traffic to the local Ollama backup model.'
-  },
-  {
-    id: 'iot-edge',
-    industry: 'IoT & Mobility',
-    icon: 'ph:cpu-duotone',
-    title: 'Edge Stream Collector',
-    desc: 'High-throughput TCP pipeline designed for raw MQTT/sensor telemetry ingestion.',
-    prompt: 'Create a high-concurrency TCP server pipeline listening on Port 1883. Parse raw bytecode telemetry streams, apply an intelligent deduplication filter stage, and immediately fan-out to a Kafka cluster broker.'
-  },
-  {
-    id: 'e-commerce',
-    industry: 'E-Commerce',
-    icon: 'ph:shopping-cart-duotone',
-    title: 'Spike Traffic Buffer',
-    desc: 'Asynchronous backpressure queue controller for mass checkout flash sales.',
-    prompt: 'Build an HTTP ingress pool for order checkout requests on Port 8080. Integrate a SEDA staging memory buffer to throttle downstream database writes via Redis, enforcing an asynchronous backpressure policy.'
-  },
-  {
-    id: 'gaming',
-    industry: 'Game Live-Ops',
-    icon: 'ph:game-controller-duotone',
-    title: 'Live Telemetry Splitter',
-    desc: 'Dynamic real-time routing engine for tracking user state and monetization logs.',
-    prompt: 'Ingest global player activity events via WebSockets. Dynamically evaluate payload contents using SpEL expressions: route transactional event packets to JDBC data warehouses and diagnostic logs to a Redis pool.'
-  }
-]
+// 하드코딩된 industryPresets 배열 삭제됨 (t.architect.presets로 대체)
 
 // Handlers
 const selectPreset = (prompt: string) => {
@@ -164,7 +134,6 @@ const triggerManualSync = async () => {
     const res: any = await $fetch('/api/sync', { method: 'POST' })
     
     if (res.status === 200) {
-      // Allow slight delay for asynchronous Redis broadcast and DP Webhook push
       setTimeout(() => {
         syncStatus.value = 'success'
       }, 1500)
@@ -194,11 +163,9 @@ const generateYaml = async () => {
     if (res.status === 200 && res.yaml) {
       generatedYaml.value = res.yaml
     } else {
-      // Catch backend semantic errors (e.g., DP templates are missing)
       alert(`[AI Generation Failed] ${res.message || 'Unknown Error'}`)
     }
   } catch (e: any) {
-    // Provide clearer feedback if the API endpoint crashes completely
     alert(`[Service Error] AI Architect is unavailable. Error: ${e.message}`)
   } finally {
     isGenerating.value = false
@@ -235,6 +202,7 @@ const deployYaml = async () => {
 </script>
 
 <style scoped>
+/* 기존 스타일 유지 */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 

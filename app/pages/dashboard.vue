@@ -109,7 +109,7 @@ const initWebSocket = () => {
       
       // When receiving cluster telemetry data from the server
       if (data.type === 'telemetry') {
-        console.log('[Vue UI] Received Telemetry:', data.payload) 
+        // console.log('[Vue UI] Received Telemetry:', data.payload) 
         
         // Update Pinia store
         store.updateTelemetry(data)

@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const storage = useStorage('db')
 
-  console.log('[Zefio CP] RAW Incoming Body:', JSON.stringify(body, null, 2))
+  // console.log('[Zefio CP] RAW Incoming Body:', JSON.stringify(body, null, 2))
   
   if (!body || !body.globals || !Array.isArray(body.plugins)) {
     console.warn('[Zefio CP] ❌ Handshake failed: Invalid template payload received.')

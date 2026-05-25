@@ -124,58 +124,91 @@ import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 
 const { t, locale } = useTranslations()
 
-// 🚀 시나리오를 AI 라우터와 IoT 데이터 수집으로 완전히 리뉴얼했습니다.
 const scenarios = [
   {
-    id: 'ai-router',
+    id: 'ai-ops',
     promptText: {
       ko: "OpenAI와 Gemini 모델로 프롬프트를 동시 라우팅해줘. 2초 이상 지연되면 즉시 차단(Fail-Fast)하고 로컬 Ollama 모델로 우회시켜.",
-      en: "Route prompts simultaneously to OpenAI and Gemini. If delay exceeds 2s, trigger Fail-Fast and fallback to local Ollama."
+      en: "Route incoming prompt tokens parallelly to OpenAI and Gemini API upstreams. If any provider experiences latency over 2000ms, immediately trigger FAIL_FAST and shift traffic to the local Ollama backup model."
     },
-    yamlHtml: `<span class="text-slate-500"># AI Assessed Pattern: Multi-LLM Router</span>\n<span class="text-blue-300">steps:</span>\n  <span class="text-slate-500">-</span> <span class="text-blue-300">type:</span> <span class="text-emerald-400">TRY_SCOPE</span>\n    <span class="text-blue-300">on-error:</span> <span class="text-rose-400">FALLBACK</span>\n    <span class="text-blue-300">steps:</span>\n      <span class="text-slate-500">-</span> <span class="text-blue-300">type:</span> <span class="text-emerald-400">SCATTER_GATHER</span>\n        <span class="text-blue-300">config:</span>\n          <span class="text-blue-300">timeout:</span> <span class="text-amber-200">2000ms</span>\n          <span class="text-blue-300">errorPolicy:</span> <span class="text-rose-400">FAIL_FAST</span>\n        <span class="text-blue-300">steps:</span>\n          <span class="text-slate-500">-</span> <span class="text-blue-300">name:</span> <span class="text-amber-200">openai-upstream</span>\n          <span class="text-slate-500">-</span> <span class="text-blue-300">name:</span> <span class="text-amber-200">gemini-upstream</span>\n    <span class="text-blue-300">fallback-steps:</span>\n      <span class="text-slate-500">-</span> <span class="text-blue-300">name:</span> <span class="text-amber-200">ollama-local-model</span>`,
+    yamlHtml: `<span class="text-slate-500"># Zefio DSL: Multi-LLM AI Router</span>\n<span class="text-blue-300">steps:</span>\n  <span class="text-slate-500">-</span> <span class="text-blue-300">name:</span> <span class="text-emerald-400">LLM_DISPATCHER</span>\n    <span class="text-blue-300">type:</span> <span class="text-indigo-400">TRY_SCOPE</span>\n    <span class="text-blue-300">on-error:</span> <span class="text-rose-400">FALLBACK</span>\n    <span class="text-blue-300">steps:</span>\n      <span class="text-slate-500">-</span> <span class="text-blue-300">type:</span> <span class="text-indigo-400">SCATTER_GATHER</span>\n        <span class="text-blue-300">config:</span> { <span class="text-amber-200">timeout: 2000, errorPolicy: FAIL_FAST</span> }`,
     nodes: [
-      { type: 'Ingress', name: 'api-gateway', status: 'idle' },
-      { type: 'Scope', name: 'timeout-watcher', status: 'idle' },
-      { type: 'Parallel', name: 'llm-dispatcher', status: 'idle' },
-      { type: 'Error', name: 'latency-spike', status: 'idle', isErrorNode: true },
-      { type: 'Recovery', name: 'ollama-fallback', status: 'idle' }
+      { type: 'INGRESS', name: 'api-gateway' },
+      { type: 'SCOPE', name: 'timeout-watcher' },
+      { type: 'ROUTER', name: 'llm-dispatcher' },
+      { type: 'RECOVERY', name: 'ollama-fallback' }
     ],
     logs: [
-      { delay: 500, level: 'INFO', msg: '[GW] Prompt inference request received' },
-      { delay: 1000, level: 'INFO', msg: '[WATCHER] Initiating 2000ms SLA timer' },
-      { delay: 1500, level: 'WARN', msg: '[DISPATCH] Fan-out to [OpenAI, Gemini]' },
-      { delay: 2000, level: 'ERROR', msg: '[OPENAI] Latency > 2000ms! FAIL_FAST triggered.' },
-      { delay: 2500, level: 'WARN', msg: '[WATCHER] Halted. Route shifted to FALLBACK.' },
-      { delay: 3000, level: 'INFO', msg: '[OLLAMA] Local inference executed.' }
+      { level: 'INFO', msg: '[GW] Request received: Prompt tokens' },
+      { level: 'WARN', msg: '[Scatter] Fan-out to [OpenAI, Gemini]' },
+      { level: 'ERROR', msg: '[OpenAI] Latency > 2000ms! FAIL_FAST' },
+      { level: 'INFO', msg: '[Fallback] Route shifted to Ollama' }
     ]
   },
   {
-    id: 'iot-stream',
+    id: 'iot-edge',
     promptText: {
       ko: "커넥티드 카에서 들어오는 실시간 텔레메트리 TCP 스트림을 수집하고, 필터링 후 Kafka 브로커로 분산시켜.",
-      en: "Ingest real-time telemetry TCP streams from connected cars, filter anomalies, and distribute to Kafka brokers."
+      en: "Create a high-concurrency TCP server pipeline listening on Port 1883. Parse raw bytecode telemetry, filter anomalies, and fan-out to Kafka."
     },
-    yamlHtml: `<span class="text-slate-500"># AI Assessed Pattern: Edge Data Pipeline</span>\n<span class="text-blue-300">steps:</span>\n  <span class="text-slate-500">-</span> <span class="text-blue-300">name:</span> <span class="text-amber-200">tcp-ingestion</span>\n    <span class="text-blue-300">type:</span> <span class="text-emerald-400">TcpServer</span>\n    <span class="text-blue-300">config:</span>\n      <span class="text-blue-300">port:</span> <span class="text-amber-200">1883</span>\n\n  <span class="text-slate-500">-</span> <span class="text-blue-300">name:</span> <span class="text-amber-200">anomaly-filter</span>\n    <span class="text-blue-300">type:</span> <span class="text-emerald-400">SpELFilter</span>\n    <span class="text-blue-300">config:</span>\n      <span class="text-blue-300">expression:</span> <span class="text-amber-200">"payload.speed &lt; 200"</span>\n\n  <span class="text-slate-500">-</span> <span class="text-blue-300">name:</span> <span class="text-amber-200">kafka-stream</span>\n    <span class="text-blue-300">type:</span> <span class="text-emerald-400">KafkaProducer</span>`,
+    yamlHtml: `<span class="text-slate-500"># Zefio DSL: Edge Telemetry Pipeline</span>\n<span class="text-blue-300">steps:</span>\n  <span class="text-slate-500">-</span> <span class="text-blue-300">type:</span> <span class="text-emerald-400">TcpServer</span>\n    <span class="text-blue-300">config:</span> { <span class="text-amber-200">port: 1883</span> }\n  <span class="text-slate-500">-</span> <span class="text-blue-300">type:</span> <span class="text-emerald-400">SpELFilter</span>\n    <span class="text-blue-300">config:</span> { <span class="text-amber-200">expression: "speed < 200"</span> }`,
     nodes: [
-      { type: 'Gateway', name: 'tcp-edge-node', status: 'idle' },
-      { type: 'Filter', name: 'anomaly-detector', status: 'idle' },
-      { type: 'Queue', name: 'seda-buffer', status: 'idle', isJump: true },
-      { type: 'Target', name: 'kafka-cluster', status: 'idle' }
+      { type: 'INGRESS', name: 'tcp-edge-node' },
+      { type: 'INTERCEPTOR', name: 'anomaly-detector' },
+      { type: 'UPSTREAM', name: 'kafka-cluster' }
     ],
     logs: [
-      { delay: 500, level: 'INFO', msg: '[TCP] Connected 10,000+ edge devices' },
-      { delay: 1200, level: 'INFO', msg: '[STREAM] Ingesting raw telemetry bytes' },
-      { delay: 1800, level: 'WARN', msg: '[FILTER] Dropped payload.speed > 200' },
-      { delay: 2400, level: 'INFO', msg: '[SEDA] Buffered valid events to memory queue' },
-      { delay: 3000, level: 'INFO', msg: '[KAFKA] Successfully produced to topic: telemetry' }
+      { level: 'INFO', msg: '[TCP] Connected 10,000+ edge devices' },
+      { level: 'INFO', msg: '[Filter] Validating telemetry bytes' },
+      { level: 'WARN', msg: '[Filter] Dropped anomaly: speed > 200' },
+      { level: 'INFO', msg: '[Upstream] Kafka partition write success' }
+    ]
+  },
+  {
+    id: 'e-commerce',
+    promptText: {
+      ko: "이커머스 결제 트래픽을 위한 HTTP Ingress 풀을 생성하고 SEDA 버퍼링으로 DB Write 부하를 조절해줘.",
+      en: "Build an HTTP ingress pool for checkout requests on 8080. Use a SEDA buffer to throttle DB writes via Redis."
+    },
+    yamlHtml: `<span class="text-slate-500"># Zefio DSL: Checkout Traffic Buffer</span>\n<span class="text-blue-300">ingress:</span>\n  <span class="text-purple-400">port:</span> <span class="text-amber-200">8080</span>\n<span class="text-blue-300">steps:</span>\n  <span class="text-slate-500">-</span> <span class="text-blue-300">type:</span> <span class="text-emerald-400">SEDA_BUFFER</span>\n    <span class="text-blue-300">config:</span> { <span class="text-amber-200">throttle: 500</span> }`,
+    nodes: [
+      { type: 'INGRESS', name: 'checkout-ingress' },
+      { type: 'INTERCEPTOR', name: 'seda-buffer' },
+      { type: 'UPSTREAM', name: 'db-writer' }
+    ],
+    logs: [
+      { level: 'INFO', msg: '[HTTP] Port 8080 ready' },
+      { level: 'INFO', msg: '[SEDA] Buffering flash-sale requests' },
+      { level: 'WARN', msg: '[Throttle] Redis pressure high' },
+      { level: 'INFO', msg: '[DB] Batch write synchronized' }
+    ]
+  },
+  {
+    id: 'gaming',
+    promptText: {
+      ko: "게임 클라이언트 활동 로그를 WebSocket으로 수집하고, 동적 라우팅을 통해 로그를 분석해줘.",
+      en: "Ingest player events via WebSockets. Route transactional packets to JDBC and diagnostic logs to Redis."
+    },
+    yamlHtml: `<span class="text-slate-500"># Zefio DSL: Gaming Live-Ops Splitter</span>\n<span class="text-blue-300">ingress:</span>\n  <span class="text-purple-400">type:</span> <span class="text-emerald-400">WebSocketIngress</span>\n<span class="text-blue-300">steps:</span>\n  <span class="text-slate-500">-</span> <span class="text-blue-300">type:</span> <span class="text-emerald-400">SWITCH</span>\n    <span class="text-blue-300">cases:</span> [ <span class="text-amber-200">TRANSACTIONAL</span> ]`,
+    nodes: [
+      { type: 'INGRESS', name: 'ws-gateway' },
+      { type: 'ROUTER', name: 'event-splitter' },
+      { type: 'UPSTREAM', name: 'jdbc-warehouse' },
+      { type: 'UPSTREAM', name: 'redis-logger' }
+    ],
+    logs: [
+      { level: 'INFO', msg: '[WS] Player session established' },
+      { level: 'INFO', msg: '[Router] Analyzing packet event type' },
+      { level: 'INFO', msg: '[JDBC] Monetization log stored' },
+      { level: 'INFO', msg: '[Redis] Diagnostic state cached' }
     ]
   }
 ]
 
+// Simulation logic
 const scenarioIndex = ref(0)
 const currentScenario = computed(() => scenarios[scenarioIndex.value])
 const phase = ref<'typing' | 'yaml' | 'running' | 'done'>('typing')
-
 const displayedPrompt = ref('')
 let charIndex = 0
 const activeNodeIndex = ref(-1)
@@ -192,9 +225,7 @@ const playSequence = () => {
   activeNodeIndex.value = -1
   visibleLogs.value = []
   
-  const currentLang = locale.value as 'ko' | 'en'
-  const textToType = currentScenario.value.promptText[currentLang]
-
+  const textToType = currentScenario.value.promptText[locale.value as 'ko' | 'en']
   const typeInterval = setInterval(() => {
     displayedPrompt.value = textToType.substring(0, charIndex)
     charIndex++
@@ -209,19 +240,16 @@ const playSequence = () => {
 
 const startRuntimeSimulation = () => {
   phase.value = 'running'
-  const scenario = currentScenario.value
-
-  scenario.logs.forEach((logItem, idx) => {
+  currentScenario.value.logs.forEach((logItem, idx) => {
     timers.push(setTimeout(() => {
       const now = new Date()
-      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
       visibleLogs.value.push({ time: timeStr, level: logItem.level, message: logItem.msg })
       nextTick(() => { if (logContainer.value) logContainer.value.scrollTop = logContainer.value.scrollHeight })
-      if (idx < scenario.nodes.length) activeNodeIndex.value = idx
-    }, logItem.delay))
+      if (idx < currentScenario.value.nodes.length) activeNodeIndex.value = idx
+    }, idx * 800))
   })
-
-  const maxDelay = scenario.logs[scenario.logs.length - 1].delay + 2000
+  
   timers.push(setTimeout(() => {
     phase.value = 'done'
     activeNodeIndex.value = -1
@@ -229,28 +257,16 @@ const startRuntimeSimulation = () => {
       scenarioIndex.value = (scenarioIndex.value + 1) % scenarios.length
       playSequence()
     }, 1000))
-  }, maxDelay))
+  }, currentScenario.value.logs.length * 800 + 1000))
 }
 
 const getNodeClass = (index: number, node: any) => {
-  if (activeNodeIndex.value !== index) {
-    return 'bg-white/5 text-slate-400 border-white/10'
-  }
-  if (node.isErrorNode) return 'bg-rose-500/20 text-rose-300 border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.4)] animate-pulse'
-  if (node.type === 'Recovery') return 'bg-amber-500/20 text-amber-300 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.4)]'
-  return 'bg-blue-500/20 text-blue-300 border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.5)] scale-105'
+  if (activeNodeIndex.value !== index) return 'bg-white/5 text-slate-400 border-white/10'
+  return 'bg-blue-500/20 text-blue-300 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)] scale-105'
 }
 
-const getLogColor = (level: string) => {
-  switch (level) {
-    case 'INFO': return 'text-blue-300'
-    case 'WARN': return 'text-amber-300 font-bold' 
-    case 'ERROR': return 'text-rose-400 font-bold'
-    default: return 'text-slate-300'
-  }
-}
+const getLogColor = (level: string) => level === 'ERROR' ? 'text-rose-400' : level === 'WARN' ? 'text-amber-400' : 'text-slate-300'
 
-watch(locale, () => { playSequence() })
-onMounted(() => { playSequence() })
-onUnmounted(() => { clearAllTimers() })
+onMounted(playSequence)
+onUnmounted(clearAllTimers)
 </script>
