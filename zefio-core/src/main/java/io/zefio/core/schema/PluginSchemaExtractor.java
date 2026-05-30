@@ -61,6 +61,7 @@ public class PluginSchemaExtractor {
 
                     if (!tuning.min().isEmpty()) aiopsMeta.put("min", tuning.min());
                     if (!tuning.max().isEmpty()) aiopsMeta.put("max", tuning.max());
+                    if (!tuning.pattern().isEmpty()) aiopsMeta.put("pattern", tuning.pattern());
 
                     fieldInfo.put("_aiops", aiopsMeta);
                 }

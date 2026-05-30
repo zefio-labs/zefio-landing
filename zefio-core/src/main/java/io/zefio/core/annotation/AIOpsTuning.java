@@ -39,6 +39,12 @@ public @interface AIOpsTuning {
     String max() default "";
 
     /**
+     * Regular expression pattern used by the Control Plane to validate string fields
+     * (e.g., cron expressions, network IP masks, path templates) prior to deployment.
+     */
+    String pattern() default "";
+
+    /**
      * Risk level of the change impacting the system. Used for AI prompt constraints.
      */
     RiskLevel riskLevel() default RiskLevel.LOW;
@@ -63,6 +69,7 @@ public @interface AIOpsTuning {
         RESOURCE_SCALE,   // System resource related (workThreadCount, poolMaxSize)
         PROTOCOL_SPEC,    // Message and protocol specs (statusOffset, pageLen - tuning prohibited)
         BUSINESS_LOGIC,   // Business logic control (e.g., retry counts)
+        SECURITY,
         GENERAL
     }
 }

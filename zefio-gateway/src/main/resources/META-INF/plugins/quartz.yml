@@ -1,5 +1,5 @@
 modules:
   - name: QuartzIngress
     type: ingress
-    className: io.zefio.data.quartz.QuartzIngress
-    dtoClassName: io.zefio.data.quartz.dto.QuartzIngressValues
+    className: io.zefio.gateway.quartz.QuartzScheduledIngress
+    dtoClassName: io.zefio.gateway.quartz.dto.QuartzIngressValues

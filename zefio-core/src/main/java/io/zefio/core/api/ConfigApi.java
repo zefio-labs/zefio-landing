@@ -47,7 +47,7 @@ public class ConfigApi {
             yamlMapper.readValue(yamlContent, FlowSettings.class);
 
             // 2. Broadcast to all DP nodes via Redis
-            log.info("[DP-Seed] Validation passed. Broadcasting hot-reload command to group: {}", targetGroup);
+            log.info("[ConfigApi] Structural validation successful. Broadcasting cluster update payload to: {}", targetGroup);
 
             Map<String, Object> command = new HashMap<>();
             command.put("type", "command");
@@ -59,11 +59,11 @@ public class ConfigApi {
 
             Map<String, String> response = new HashMap<>();
             response.put("status", "SUCCESS");
-            response.put("message", "Broadcasted to cluster");
+            response.put("message", "Hot-reload update successfully broadcasted to cluster.");
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            log.error("[DP-Seed] Validation Failed", e);
+            log.error("[ConfigApi] Cluster configuration hot-deployment aborted due to structural violation", e);
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("status", "FAIL");
             errorResponse.put("reason", e.getMessage());
@@ -84,13 +84,26 @@ public class ConfigApi {
     }
 
     @GetMapping(value = "/dto/{parameter}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Object getDTO(@PathVariable("parameter") String parameter) throws ClassNotFoundException {
-        PluginMeta filter = yamlFilterLoader.get(parameter);
-        if (filter == null || filter.getDtoClassName() == null) {
-            return Collections.singletonMap("error", "Schema not found for parameter: " + parameter);
-        }
-        Class<?> dtoClass = Class.forName(filter.getDtoClassName());
+    public ResponseEntity<?> getDTO(@PathVariable("parameter") String parameter) {
+        try {
+            String targetClassName = null;
+            PluginMeta filter = yamlFilterLoader.get(parameter);
 
-        return schemaExtractor.extractSchemaDescriptions(dtoClass, new HashSet<>());
+            if (filter != null && filter.getDtoClassName() != null) {
+                targetClassName = filter.getDtoClassName();
+            } else {
+                // Fallback: If no custom configuration mapping exists, assume parameter represents an absolute class path
+                targetClassName = parameter;
+            }
+
+            Class<?> dtoClass = Class.forName(targetClassName);
+            Map<String, Object> structuralSchema = schemaExtractor.extractSchemaDescriptions(dtoClass, new HashSet<>());
+            return ResponseEntity.ok(structuralSchema);
+
+        } catch (ClassNotFoundException e) {
+            log.error("[ConfigApi] Target class mapping resolution failed for query parameter token: {}", parameter);
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error",
+                    "Target metadata DTO reflection model path could not be resolved: " + e.getMessage()));
+        }
     }
 }

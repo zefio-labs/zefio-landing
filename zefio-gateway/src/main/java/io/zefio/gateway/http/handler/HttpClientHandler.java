@@ -149,12 +149,25 @@ public class HttpClientHandler extends AbstractUpstreamHandler<HttpObject, Paylo
     /**
      * Dismantles the FullHttpResponse and maps its metadata and body into the internal Payload model.
      */
+    /**
+     * Dismantles the FullHttpResponse and maps its metadata and body into the internal Payload model.
+     * Patched to provide bulletproof null-safe fallbacks for Charset resolutions.
+     */
     private Payload parseHttpResponseToPayload(FullHttpResponse response) throws Exception {
-        // Resolve character encoding dynamically from the response headers, or fallback to configuration
-        Charset charset = HttpUtils.resolveCharsetFromContentType(response.headers(), responseEncoding);
-        if (charset == null) charset = responseEncoding;
+        // Resolve character encoding dynamically from the response headers
+        Charset charset = null;
+        try {
+            charset = HttpUtils.resolveCharsetFromContentType(response.headers(), responseEncoding);
+        } catch (Exception e) {
+            log.debug("Failed to dynamically resolve charset from HTTP content-type header", e);
+        }
 
-        // Extract raw bytes (Used for normal body processing as well as error payload attachment)
+        // 🚀 Critical Remedy 1: Enforce strict JVM default StandardCharsets.UTF_8 if configuration properties are missing
+        if (charset == null) {
+            charset = (this.responseEncoding != null) ? this.responseEncoding : java.nio.charset.StandardCharsets.UTF_8;
+        }
+
+        // Extract raw bytes safely
         byte[] body = new byte[response.content().readableBytes()];
         response.content().readBytes(body);
 
@@ -163,9 +176,7 @@ public class HttpClientHandler extends AbstractUpstreamHandler<HttpObject, Paylo
         payload.setTelegramName(this.context.getTelegramName());
 
         // Escape Hatch: Inject the dynamically resolved encoding back into the event headers
-        if (charset != null) {
-            payload.setHeader(ApplicationAttributes.DYNAMIC_RESPONSE_ENCODING, charset.name());
-        }
+        payload.setHeader(ApplicationAttributes.DYNAMIC_RESPONSE_ENCODING, charset.name());
 
         // Map HTTP Headers to Event Properties
         Map<String, Object> headerMap = new HashMap<>();
@@ -186,16 +197,16 @@ public class HttpClientHandler extends AbstractUpstreamHandler<HttpObject, Paylo
             HttpUtils.processSingleFileResponse(response.content(), contentDisposition, payload);
         }
 
-        // Note: Standard bodies (JSON, XML, TEXT) are already loaded into the Payload via the constructor.
-
-        // Error Handling: Map non-200 responses to domain exceptions while preserving the error body
+        // Error Handling: Map unexpected error responses while preserving the error body
         int statusCode = response.status().code();
-        if (statusCode != HttpResponseStatus.OK.code()) {
+
+        // 🚀 Critical Remedy 2: Allow both 200 OK and 202 Accepted to pass without triggering exception throw paths
+        if (statusCode != HttpResponseStatus.OK.code() && statusCode != HttpResponseStatus.ACCEPTED.code()) {
             FlowResultStatus status = HttpUtils.fromHttpStatusCode(statusCode);
             org.springframework.http.HttpHeaders httpHeaders = new org.springframework.http.HttpHeaders();
             response.headers().forEach(entry -> httpHeaders.add(entry.getKey(), entry.getValue()));
 
-            // Convert body bytes to string for JSON error extraction and logging
+            // Convert body bytes to string for JSON error extraction and logging safely guarded by the resolved fallback charset
             String errorBodyString = new String(body, charset);
             log.warn("Upstream Server Error [{}]: {}", statusCode, errorBodyString);
 
@@ -210,7 +221,7 @@ public class HttpClientHandler extends AbstractUpstreamHandler<HttpObject, Paylo
         }
 
         // Lightweight logging focused on HTTP metadata
-        log.info("HTTP Response Ingress: statusCode=[{}] dynamicEncoding=[{}]", response.status(), charset);
+        log.info("HTTP Response Ingress: statusCode=[{}], resolvedCharset=[{}]", response.status(), charset);
 
         if (log.isDebugEnabled()) {
             log.debug("HTTP Response Headers: {}", response.headers().entries());
