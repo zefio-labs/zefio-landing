@@ -118,6 +118,11 @@ public class IoStageWorker implements IQueueStatusProvider {
         }
     }
 
+    /**
+     * Evaluates if the internal IO blocking queue contains no pending operations.
+     * Crucial for verifying absolute pipeline exhaustion states during active hot-swaps.
+     */
+    public boolean isQueueEmpty() { return this.queue.isEmpty(); }
     @Override public int getQueueSize() { return queue.size(); }
     @Override public int getQueueCapacity() { return queueCapacity; }
 }

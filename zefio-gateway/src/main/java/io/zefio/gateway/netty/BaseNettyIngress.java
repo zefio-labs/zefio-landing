@@ -46,6 +46,9 @@ public abstract class BaseNettyIngress extends BaseIngress {
 	protected ServerBootstrap bootstrap;
 	protected final Integer port;
 
+	// Active reference to parent socket execution context to manage lifecycle events
+	private Channel serverChannel;
+
 	// Track all active channels for telemetry and graceful shutdown orchestration
 	protected final ChannelGroup allChannels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
@@ -73,6 +76,8 @@ public abstract class BaseNettyIngress extends BaseIngress {
 		this.bootstrap = new ServerBootstrap();
 		this.bootstrap.group(this.bossGroup, this.workerGroup)
 				.channel(NioServerSocketChannel.class)
+				// Enabled reuse option at ServerBootstrap level to prevent kernel bind conflicts
+				.option(ChannelOption.SO_REUSEADDR, true)
 				.option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(20480))
 				.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, values.getConnectTimeout())
 				.childOption(ChannelOption.SO_KEEPALIVE, values.getSoKeepAlive())
@@ -101,11 +106,15 @@ public abstract class BaseNettyIngress extends BaseIngress {
 
 		log.info("{} Initialized at port [{}]", this.logHeader, this.port);
 
-		ChannelFuture f;
 		try {
 			// Bind and start to accept incoming connections
-			f = this.bootstrap.bind().sync();
-			f.channel().closeFuture().sync();
+			ChannelFuture f = this.bootstrap.bind().sync();
+
+			// Secure a permanent handle to the master execution port context
+			this.serverChannel = f.channel();
+
+			// Block thread execution gracefully to await platform events
+			this.serverChannel.closeFuture().sync();
 		} catch (Exception e) {
 			if (e.getMessage() == null) {
 				// Handle clean interruption during system shutdown
@@ -115,21 +124,28 @@ public abstract class BaseNettyIngress extends BaseIngress {
 				logFatalStartupError(e);
 				throw new FlowException(e, FlowResultStatus.INTERNAL_SERVER_ERROR);
 			}
-		} finally {
-			workerGroup.shutdownGracefully();
-			bossGroup.shutdownGracefully();
+		}
+	}
+
+	@Override
+	public void stopListening() {
+		if (this.serverChannel != null && this.serverChannel.isActive()) {
+			log.info("🛑 [{}-Edge] Terminating parent listening socket channel. vacating port [{}]", pluginName, this.port);
+			// Synchronously unbind from the network interface to allow immediate takeover by V2 flow
+			this.serverChannel.close().syncUninterruptibly();
+			log.info("ℹ️ [{}-Edge] Socket listener detached cleanly from port [{}].", pluginName, this.port);
 		}
 	}
 
 	@Override
 	public void close() {
 		// Stop accepting new connections immediately
-		if (bossGroup != null) {
+		if (bossGroup != null && !bossGroup.isShuttingDown()) {
 			bossGroup.shutdownGracefully(100, 3000, TimeUnit.MILLISECONDS).syncUninterruptibly();
 		}
 
 		// Allow current I/O tasks to finish before closing workers
-		if (workerGroup != null) {
+		if (workerGroup != null && !workerGroup.isShuttingDown()) {
 			workerGroup.shutdownGracefully(100, 3000, TimeUnit.MILLISECONDS).syncUninterruptibly();
 		}
 

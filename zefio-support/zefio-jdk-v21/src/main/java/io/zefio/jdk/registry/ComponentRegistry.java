@@ -4,9 +4,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Static registry for managing and retrieving core engine components.
- * Provides a bypass mechanism for accessing Ingress and Upstream instances
- * outside the Spring application context.
+ * Static registry for tracking and accessing active engine components.
+ * Manages the lifecycle and retrieval of Ingress, Interceptor, and Upstream instances.
+ * Enhanced with isolated removal capabilities to support dynamic Blue-Green hot-swaps without leaks.
  */
 public class ComponentRegistry {
     private static final Map<String, Object> INGRESS = new ConcurrentHashMap<>();
@@ -14,6 +14,7 @@ public class ComponentRegistry {
     private static final Map<String, Object> UPSTREAM = new ConcurrentHashMap<>();
     private static final Map<String, Object> ERRORS = new ConcurrentHashMap<>();
 
+    // Registration Methods
     public static void registerIngress(String name, Object obj) {
         INGRESS.put(name, obj);
     }
@@ -27,11 +28,29 @@ public class ComponentRegistry {
         ERRORS.put(name, obj);
     }
 
+    // Retrieval Methods
     public static Object getIngress(String name) { return INGRESS.get(name); }
     public static Object getUpstream(String name) { return UPSTREAM.get(name); }
     public static Object getInterceptor(String name) { return INTERCEPTOR.get(name); }
     public static Object getError(String name) { return ERRORS.get(name); }
 
+    // ⭐️ Explicit Eviction Methods added to fix compilation errors and caching leaks
+    public static void unregisterIngress(String name) {
+        INGRESS.remove(name);
+    }
+    public static void unregisterUpstream(String name) {
+        UPSTREAM.remove(name);
+    }
+    public static void unregisterInterceptor(String name) {
+        INTERCEPTOR.remove(name);
+    }
+    public static void unregisterError(String name) {
+        ERRORS.remove(name);
+    }
+
+    /**
+     * Clears all registered components from the registry.
+     */
     public static void clear() {
         INGRESS.clear();
         UPSTREAM.clear();
@@ -40,7 +59,7 @@ public class ComponentRegistry {
     }
 
     /**
-     * Returns a formatted summary of all registered components for diagnostic purposes.
+     * Generates a diagnostic dump of all currently registered components.
      */
     public static String dumpAll() {
         StringBuilder sb = new StringBuilder();

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zefio.core.schema.DslConfigurationLoader;
 import io.zefio.core.config.flow.FlowSettings;
+import io.zefio.core.config.flow.FlowConfiguration;
+import io.zefio.core.config.flow.StepConfiguration;
 import io.zefio.core.config.global.GlobalOptionsProperties;
 import io.zefio.core.PipelineService;
 import io.zefio.core.factory.FlowServiceFactory;
@@ -107,49 +109,168 @@ public class FlowSettingsBean implements InitializingBean, DisposableBean {
         }
     }
 
-    /** 💡 Hot-Swap entry point for Redis Command Listener */
+    /**
+     * 💡 Refactored hotSwap process.
+     * Fixed factory wiping errors and recursive registry caching memory leaks.
+     */
     public synchronized void hotSwap(FlowSettings newSettings) throws Exception {
-        log.info("🚀 Initiating Hot-Swap for pipeline...");
+        log.info("🚀 [Hot-Swap] Initiating non-blocking Blue-Green deployment sequence...");
         try {
-            // 1. Graceful shutdown
-            destroy();
+            SharedPools pools = sharedPoolManager.setupPools();
 
-            // 2. Defensive check: If new settings lack telegrams, try to retain or reload
+            // ⭐️ Fixed Defect 1: TelegramFactory.clear() is removed to preserve running transformations.
+            // Map modifications are handled cleanly via implicit upsert replacement loops.
+            if (newSettings.getTelegrams() != null) {
+                newSettings.getTelegrams().forEach((name, config) -> {
+                    try { TelegramFactory.register(name, config.getType(), config.getConfig()); }
+                    catch (Exception e) { log.error("[Telegram Hot-Swap Init] Error: " + name, e); }
+                });
+            }
+
             if (newSettings.getTelegrams() == null || newSettings.getTelegrams().isEmpty()) {
-                log.warn("⚠️ Deployment payload missing 'telegrams'. Falling back to existing configuration.");
-                // Keep the current settings' telegrams if the new ones are empty
+                log.warn("⚠️ Deployment payload missing 'telegrams'. Retaining previous configuration state.");
                 if (this.settings != null && this.settings.getTelegrams() != null) {
                     newSettings.setTelegrams(this.settings.getTelegrams());
                 }
             }
 
-            // 3. Re-apply configurations
-            this.settings = newSettings;
-            applyConfiguration(this.settings);
+            if (newSettings.getFlows() == null || newSettings.getFlows().isEmpty()) {
+                log.warn("⚠️ No active flow definitions identified in the deployment payload.");
+                return;
+            }
 
-            // 4. Manually start the new pipelines
-            boolean hasError = false;
-            StringBuilder errorDetails = new StringBuilder();
+            for (FlowConfiguration newFlowConfig : newSettings.getFlows()) {
 
-            for (PipelineService flowService : this.flowServiceList) {
-                try {
-                    flowService.start(); // Open the ingress valve
-                    log.info("[Hot-Swap] Flow started: {}", flowService.getName());
-                } catch (Exception e) {
-                    hasError = true;
-                    errorDetails.append(flowService.getName()).append(" (").append(e.getMessage()).append("); ");
-                    log.error("[Hot-Swap] Failed to start flow: {}", flowService.getName(), e);
+                PipelineService oldFlow = null;
+                for (PipelineService activeService : this.flowServiceList) {
+                    if (activeService.getName().equals(newFlowConfig.getName())) {
+                        oldFlow = activeService;
+                        break;
+                    }
+                }
+
+                if (oldFlow != null) {
+                    log.info("🔄 [Hot-Swap] Existing active flow pipeline [{}] detected. Commencing swap.", oldFlow.getName());
+
+                    // ⭐️ Fixed Defect 2: Clear cached components cleanly before factory compilation.
+                    if (newFlowConfig.getIngress() != null) {
+                        ComponentRegistry.unregisterIngress(newFlowConfig.getIngress().getName());
+                    }
+                    if (newFlowConfig.getSteps() != null) {
+                        for (StepConfiguration step : newFlowConfig.getSteps()) {
+                            recursiveUnregisterComponents(step);
+                        }
+                    }
+
+                    // Step A: Sever only the listening layer via abstract interface mapping rules
+                    oldFlow.stopListening();
+
+                    // Step B: Instantly evict the old service from the logical lookup registry
+                    this.flowServiceList.remove(oldFlow);
+
+                    // Step C: Build the completely isolated new version instance (Compiles clean fresh components)
+                    PipelineService newFlowService = flowFactory.build(
+                            newFlowConfig, pools, newSettings.getProfiles(), newSettings.getGlobalErrors()
+                    );
+
+                    if (newFlowService != null) {
+                        // Step D: Start the new flow safely
+                        newFlowService.start();
+                        this.flowServiceList.add(newFlowService);
+                        log.info("✨ [Hot-Swap] New flow instance [{}] successfully claimed port and went active.", newFlowService.getName());
+                    }
+
+                    // Step E: Asynchronously monitor and drain old transactions via the Shared Scheduler
+                    final PipelineService finalOldFlow = oldFlow;
+                    pools.getSharedScheduledPool().submit(() -> {
+                        try {
+                            int checkCount = 0;
+                            boolean isDrained = false;
+
+                            log.info("[WatchDog] Monitoring transaction drain for deprecated flow pipeline: {}", finalOldFlow.getName());
+
+                            // ⭐️ Fixed Defect 3: isAllQueueEmpty checks the precise callback execution count state
+                            while (checkCount < 120) {
+                                if (finalOldFlow.isAllQueueEmpty()) {
+                                    isDrained = true;
+                                    break;
+                                }
+                                Thread.sleep(500);
+                                checkCount++;
+                            }
+
+                            if (!isDrained) {
+                                log.warn("[WatchDog] Drain timeout exceeded for old flow [{}]. Forcing cleanup sequence.", finalOldFlow.getName());
+                            } else {
+                                log.info("[WatchDog] All in-flight payloads drained successfully for old flow [{}].", finalOldFlow.getName());
+                            }
+
+                            // Final resource reclamation and thread pools depletion
+                            finalOldFlow.shutdown();
+                            log.info("✅ [Hot-Swap] Deprecated flow pipeline [{}] resources fully reclaimed.", finalOldFlow.getName());
+                        } catch (Exception e) {
+                            log.error("[WatchDog] Critical failure during old flow resource reclamation", e);
+                        }
+                    });
+
+                } else {
+                    // Fresh pipeline provision: Instantiate and boot normally
+                    PipelineService newService = flowFactory.build(
+                            newFlowConfig, pools, newSettings.getProfiles(), newSettings.getGlobalErrors()
+                    );
+                    if (newService != null) {
+                        newService.start();
+                        this.flowServiceList.add(newService);
+                        log.info("🆕 [Hot-Swap] Provisioned entirely new flow pipeline [{}].", newService.getName());
+                    }
                 }
             }
 
-            if (hasError) {
-                throw new RuntimeException("Flow startup failed: " + errorDetails.toString());
-            }
-            log.info("✅ Hot-Swap completed successfully inside Engine.");
+            this.settings = newSettings;
+            log.info("✅ [Hot-Swap] Total pipeline Blue-Green deployment sequence finished successfully.");
 
         } catch (Exception e) {
-            log.error("❌ Critical failure during Hot-Swap", e);
+            log.error("❌ [Hot-Swap] Operational failure during non-blocking pipeline reload", e);
             throw e;
+        }
+    }
+
+    /**
+     * Helper routine designed to recursively scour and purge stale plugin templates
+     * embedded within multi-layered composite architectures (TRY_SCOPE, SWITCH cases, etc).
+     */
+    private void recursiveUnregisterComponents(StepConfiguration step) {
+        if (step == null) return;
+
+        // Purge memory handles for the given name context
+        ComponentRegistry.unregisterUpstream(step.getName());
+        ComponentRegistry.unregisterInterceptor(step.getName());
+        ComponentRegistry.unregisterError(step.getName());
+
+        // Recurse down inside nested scope steps loops
+        if (step.getSteps() != null) {
+            for (StepConfiguration subStep : step.getSteps()) {
+                recursiveUnregisterComponents(subStep);
+            }
+        }
+        if (step.getFallbackSteps() != null) {
+            for (StepConfiguration fallbackStep : step.getFallbackSteps()) {
+                recursiveUnregisterComponents(fallbackStep);
+            }
+        }
+        if (step.getCases() != null) {
+            for (io.zefio.core.config.flow.SwitchCaseConfig caseConfig : step.getCases()) {
+                if (caseConfig.getSteps() != null) {
+                    for (StepConfiguration caseStep : caseConfig.getSteps()) {
+                        recursiveUnregisterComponents(caseStep);
+                    }
+                }
+            }
+        }
+        if (step.getDefaultSteps() != null) {
+            for (StepConfiguration defStep : step.getDefaultSteps()) {
+                recursiveUnregisterComponents(defStep);
+            }
         }
     }
 

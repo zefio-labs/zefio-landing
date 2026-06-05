@@ -8,6 +8,7 @@ import io.zefio.core.telemetry.provider.IMetricsResettable;
  * It handles the initialization of processors, starts the ingress module,
  * and provides the dispatching mechanism that pushes data into the
  * internal processing stages (SEDA queues).
+ * Extended with abstraction methods to support zero-downtime hot-swap orchestration.
  */
 public interface PipelineService extends IMetricsResettable {
     void initialise() throws Exception;
@@ -22,4 +23,10 @@ public interface PipelineService extends IMetricsResettable {
 
     /** Returns the Ingress module associated with this pipeline. */
     Ingress getIngress();
+
+    /** Closes only the inbound listener socket while keeping worker threads alive for draining. */
+    void stopListening();
+
+    /** Evaluates whether all asynchronous SEDA worker stages (CPU/IO) are completely empty. */
+    boolean isAllQueueEmpty();
 }

@@ -15,6 +15,7 @@ import java.nio.charset.Charset;
 /**
  * Base implementation for all Ingress modules.
  * Manages common properties such as encoding, exchange patterns, and Telegram builders.
+ * Implements the universal hot-swap interface step to support polymorphic unbinding.
  */
 public abstract class BaseIngress extends BaseGatewayPlugin implements Ingress {
     protected ExchangePattern exchangePattern;
@@ -77,6 +78,17 @@ public abstract class BaseIngress extends BaseGatewayPlugin implements Ingress {
     @Override
     public boolean isTwoWay() {
         return this.exchangePattern == ExchangePattern.RequestReply;
+    }
+
+    /**
+     * 🎯 [Polymorphic Hot-Swap Step]
+     * Default fallback implementation for the Ingress unbinding interface.
+     * Passive ingresses (like LocalIngress) inherit this as a safe No-Op action.
+     * Network-facing ingresses (like BaseNettyIngress) must override this to release kernel descriptors.
+     */
+    @Override
+    public void stopListening() {
+        log.debug("{} Ingress type does not allocate network descriptors. Skipping physical unbind.", this.logHeader);
     }
 
     /**

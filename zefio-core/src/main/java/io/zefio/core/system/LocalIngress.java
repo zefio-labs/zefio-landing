@@ -10,6 +10,10 @@ import io.zefio.core.payload.Payload;
 import io.zefio.core.payload.ResponseListener;
 import org.slf4j.MDC;
 
+/**
+ * Passive Ingress mechanism engineered for intra-engine pipeline transfers.
+ * Safely inherits the default empty stopListening configuration from BaseIngress.
+ */
 public class LocalIngress extends BaseIngress {
 
     // Internal storage for the callback handler to pass events to the Flow pipeline.

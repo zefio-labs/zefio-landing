@@ -15,6 +15,7 @@ public interface Ingress extends GatewayPlugin {
 	void receive(IngressHandler ingressHandler);
 
 	boolean isTwoWay();
+	void stopListening();
 	PayloadBuilder getEventBuilder();
 
 	/**

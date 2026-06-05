@@ -1,5 +1,6 @@
 package io.zefio.core.engine.flow;
 
+import io.zefio.core.TrackingProxyCallback;
 import io.zefio.core.common.exception.FlowException;
 import io.zefio.core.common.exception.FlowResultStatus;
 import io.zefio.core.common.util.FlowErrorUtils;
@@ -63,6 +64,11 @@ public class FlowErrorHandler {
             FlowResultStatus status = FlowErrorUtils.convert(ex).getStatus();
             if (!policyManager.shouldReply(status)) {
                 log.info("[{}] Skip error response (Policy: No Reply). Reason: {}", flowName, status.getMessage());
+
+                // ⭐️ Fixed: Invoke silentRelease() on the proxy tracker to prevent hot-swap counter deadlocks
+                if (callback instanceof TrackingProxyCallback) {
+                    ((TrackingProxyCallback) callback).silentRelease();
+                }
                 return;
             }
 

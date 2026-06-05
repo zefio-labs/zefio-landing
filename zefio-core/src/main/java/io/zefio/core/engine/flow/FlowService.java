@@ -1,16 +1,18 @@
 package io.zefio.core.engine.flow;
 
+import io.zefio.core.Ingress;
+import io.zefio.core.PipelineService;
+import io.zefio.core.TrackingProxyCallback;
 import io.zefio.core.common.exception.FlowResultStatus;
 import io.zefio.core.common.util.TimeUtils;
 import io.zefio.core.config.flow.FlowOptions;
-import io.zefio.core.PipelineService;
-import io.zefio.core.Ingress;
 import io.zefio.core.engine.processor.Processor;
 import io.zefio.core.engine.registry.RouteDefinitionRegistry;
 import io.zefio.core.monitor.FlowMonitorManager;
-import io.zefio.core.util.MdcContextAwareExecutor;
 import io.zefio.core.payload.Payload;
+import io.zefio.core.payload.ResponseListener;
 import io.zefio.core.telemetry.registry.MonitorRegistry;
+import io.zefio.core.util.MdcContextAwareExecutor;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +26,9 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
-/**
+/*
  * The main implementation of PipelineService that orchestrates the entire lifecycle of a message flow.
  * It manages thread pools, SEDA workers (Compute and IO stages), and coordinates processing
  * through the PipelineOrchestrator. It also handles the graceful shutdown process to ensure zero data loss.
@@ -52,11 +55,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * │              │ - DB connection or response delays           │ -> Delegate control to FlowErrorHandler              │
  * └──────────────┴──────────────────────────────────────────────┴──────────────────────────────────────────────────────┘
  */
+/**
+ * The main implementation of PipelineService that orchestrates the entire lifecycle of a message flow.
+ * It manages thread pools, SEDA workers (Compute and IO stages), and coordinates processing
+ * through the PipelineOrchestrator. It also handles the graceful shutdown process to ensure zero data loss.
+ * Enhanced with atomic tracking to count running transactions inside the processing pipelines.
+ */
 public class FlowService implements PipelineService {
 
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
     private final AtomicBoolean isShuttingDown = new AtomicBoolean(false);
+
+    // Atomic counter added to accurately keep track of all active in-flight transactions
+    private final AtomicInteger activeTransactionCount = new AtomicInteger(0);
 
     private static final String SUFFIX_INGRESS_RECEIVER = "-ingress-receiver";
     private static final String SUFFIX_PROCESSOR = "-worker-";
@@ -191,7 +203,7 @@ public class FlowService implements PipelineService {
         this.ioStageWorker.start();
         this.computeStageWorker.start(this.flowExecutor, this.rawFlowPool, event -> pipelineOrchestrator.process(event, 0));
 
-        setupMonitoring();
+        setupThreadPoolMonitoringIfNeeded(); // Keep initialization clean
 
         log.info("{}", StringUtils.center(" " + this.flowName + " READY ", 70, "■"));
 
@@ -207,8 +219,18 @@ public class FlowService implements PipelineService {
         this.ingressThread.start();
     }
 
+    /**
+     *  Upgraded to utilize TrackingProxyCallback to avoid configuration hot-swap deadlocks.
+     */
     @Override
     public void dispatch(Payload payload) {
+        activeTransactionCount.incrementAndGet();
+
+        // Wrap the network callback using the resilient tracking proxy architecture
+        ResponseListener originalCallback = payload.getCallback();
+        TrackingProxyCallback trackingCallback = new TrackingProxyCallback(originalCallback, activeTransactionCount);
+
+        payload.setCallback(trackingCallback);
         computeStageWorker.submit(payload);
     }
 
@@ -217,6 +239,27 @@ public class FlowService implements PipelineService {
         if (this.flowMonitorManager != null) {
             this.flowMonitorManager.resetAll();
         }
+    }
+
+    @Override
+    public void stopListening() {
+        if (this.ingress != null) {
+            log.info("[{}] Intercepting hot-swap signal. Severing ingress connection listener.", flowName);
+            this.ingress.stopListening();
+        }
+    }
+
+    /**
+     * ⭐️ Fixed cross-stage verification routine.
+     * Evaluates CPU stage, IO stage, and active inline compute loops to ensure a zero-loss state.
+     */
+    @Override
+    public boolean isAllQueueEmpty() {
+        boolean isCpuStageEmpty = (this.computeStageWorker == null) || this.computeStageWorker.isQueueEmpty();
+        boolean isIoStageEmpty = (this.ioStageWorker == null) || this.ioStageWorker.isQueueEmpty();
+        boolean isTrafficFullySettled = this.activeTransactionCount.get() == 0;
+
+        return isCpuStageEmpty && isIoStageEmpty && isTrafficFullySettled;
     }
 
     @Override
@@ -286,5 +329,9 @@ public class FlowService implements PipelineService {
     @Override
     public Ingress getIngress() {
         return this.ingress;
+    }
+
+    private void setupThreadPoolMonitoringIfNeeded() {
+        setupMonitoring();
     }
 }
