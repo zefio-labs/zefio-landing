@@ -1,0 +1,148 @@
+# ==============================================================================
+# Filename: flows/flow-router-modify.yaml
+# Description: HTTP-to-Fixed relay and external system integration error isolation flow
+# ==============================================================================
+flows:
+  - name: flow-router-flow-main
+    label: "HTTP Inbound and Fixed Conversion Relay Flow"
+    options:
+      threadPool:
+        corePoolSize: 1000
+        maxPoolSize: 2000
+        queueCapacity: 2000
+        autoScaling:
+          enabled: true
+          threshold: 0.5
+          checkInterval: 5
+          scaleUpStep: 2
+          scaleDownStep: 1
+      cpuQueue:
+        capacity: 10000
+      ioQueue:
+        capacity: 5000
+
+    ingress:
+      name: from-http-51001
+      label: "HTTP Source Inbound (51001)"
+      type: HttpIngress
+      telegram: fixed-http-req
+      profile: ingress-sync-alt
+      exchangePattern: RequestReply
+      config:
+        keepAlive: false
+        port: 51001
+        requestEncoding: utf-8
+        responseEncoding: utf-8
+        responseContentType: text/plain
+        responseMatchingType: session
+        readTimeout: 50000
+        transactionTimeoutMillis: 40000
+
+    steps:
+      # 🚀 [Phase 2] Install Guardrail Filter (Top-most)
+      # [Step 1] Guardrail blockage network
+      - name: validate-payload
+        label: "Strict Input Payload Validation"
+        type: SpELValidatorInterceptor
+        config:
+          # Pass only if TARGET_VAL is strictly 'ABC', otherwise block immediately
+          condition: "#{body['TARGET_VAL'] == 'ABC'}"
+          errorMessage: "Guardrail Blocked: TARGET_VAL must be 'ABC'"
+          errorStatus: "VALIDATION_FAILED"
+
+      # 🚀 [Phase 3] Data Alchemy
+      # [Step 2] Data Alchemy
+      - name: modify-fixed-body
+        label: "Offset 3 data substitution (XYZ)"
+        type: SpELModifierInterceptor
+        config:
+          assignments:
+            # [1] ABC -> XYZ
+            - target: "body['TARGET_VAL']"
+              expression: "#{'XYZ'}"
+
+            # [2] REQ -> RES (This results in RESXYZ)
+            - target: "body['PREFIX']"
+              expression: "#{body['PREFIX'] == 'REQ' ? 'RES' : 'ERR'}"
+
+            # [3] Property Evacuation (Alchemy)
+            - target: "payload.headers['ORIGIN_TRX_ID']"
+              expression: "#{body['GLOBAL_TRX_ID']}"
+
+            # 🚀 [Modification] Wrap with #{} to execute as an expression!
+            - target: "body['DUMMY_HEADER']"
+              expression: "#{T(java.lang.String).format('TS:%d-ID:%s', T(java.lang.System).currentTimeMillis(), T(java.util.UUID).randomUUID().toString().substring(0,8))}"
+
+            # [5] Numeric calculation
+            - target: "payload.headers['COMPLEX_SCORE']"
+              expression: "#{100 * 1.5 + (body['TARGET_VAL'] == 'ABC' ? 50 : 10)}"
+
+      # 🚀 [Phase 3] The missing link: Mapping properties to HTTP response headers
+      # [Step 3] 🚀 Metadata propagation
+      - name: sync-to-http-header
+        label: "Expose internal properties in response headers"
+        type: HttpHeaderValeSetter
+        config:
+          targetType: RESPONSE # 💡 RESPONSE -> Uses PayloadHeaders.HTTP_RESPONSE_PREFIX (http.res.)
+          headerKeyValues:
+            X-ORIGIN-TRX-ID: "#{payload.headers['ORIGIN_TRX_ID']}"
+            X-COMPLEX-SCORE: "#{payload.headers['COMPLEX_SCORE']}"
+            # 💡 Bonus: Embedding current time directly into headers is now possible.
+            X-PROC-TIME: "#{T(java.lang.System).currentTimeMillis()}"
+
+      # ========================================================================
+      # 🛡️ [Step 4] External Integration Error Isolation Scope (High-Risk Zone)
+      # ========================================================================
+      - name: external-routing-scope
+        type: TRY_SCOPE
+
+        # 🔄 [Axis of Time] Retry 3 times if target server fails
+        retry:
+          enabled: true
+          maxRetries: 3
+          delay: 500
+
+        # 🛡️ [Axis of Space] Restore message spec without dropping client connection on final failure
+        on-error: FALLBACK
+
+        # 🏃 [Normal Path] Perform dynamic routing
+        steps:
+          - name: route-to-target
+            label: "Target Dynamic Branch Router"
+            type: SpELRouterInterceptor
+            config:
+              routingRules:
+                # Shoot to XML target if original TRX_ID starts with TRX-9999
+                - name: "Route to XML"
+                  condition: "#{payload.headers['ORIGIN_TRX_ID'].startsWith('TRX-9999')}"
+                  refModuleName: "to-xml"
+                # Shoot to JSON target if original TRX_ID starts with TRX-JSON
+                - name: "Route to JSON"
+                  condition: "#{payload.headers['ORIGIN_TRX_ID'].startsWith('TRX-JSON')}"
+                  refModuleName: "to-json"
+
+        # 🚑 [Bypass Path] Operates on routing failure or target server timeout
+        fallback-steps:
+          - name: build-error-response
+            label: "Assemble message on external integration failure"
+            type: SpELModifierInterceptor
+            config:
+              assignments:
+                # Mark PREFIX as ERR, and insert error message into DUMMY_HEADER area (Healing process)
+                - target: "body['PREFIX']"
+                  expression: "#{'ERR'}"
+                - target: "body['DUMMY_HEADER']"
+                  expression: "'Call Failed: ' + (#exception != null ? #exception.message : 'Unknown')"
+                - target: "body['GLOBAL_TRX_ID']"
+                  expression: "#{payload.trxID}"
+
+    on-error:
+      - error-type: ANY
+        steps:
+          - name: central-fixed-error
+            type: FixedFaultHandler
+            label: "Common Error Handling"
+            config:
+              errorCodeRules: [ ]
+              valueOverrides: [ ]
+              messageRule: null

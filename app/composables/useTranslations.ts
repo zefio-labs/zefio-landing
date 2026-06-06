@@ -1,4 +1,3 @@
-// composables/useTranslations.ts
 import { useState } from '#imports'
 import { computed } from 'vue'
 
@@ -10,7 +9,7 @@ export const useTranslations = () => {
       nav: { opensource: 'GitHub', console: 'Console' },
       hero: {
         badge: 'Zefio Engine 0.9.0 - Public Beta',
-        title1: '초고속 데이터 스트리밍,', 
+        title1: '초고속 데이터 스트리밍,',
         title2: '지능형 이벤트 메시',
         subtitle: 'AI 모델 라우팅부터 대규모 IoT 데이터 수집까지. SEDA 아키텍처 기반의 고성능 엔진과 AI 컨트롤 플레인이 모든 트래픽을 지휘합니다.',
         btnCompare: '시작하기',
@@ -52,7 +51,7 @@ export const useTranslations = () => {
             icon: 'ph:cpu-duotone',
             title: 'Edge Stream Collector',
             desc: '원시 MQTT/센서 텔레메트리 수집을 위해 설계된 고처리량 TCP 파이프라인입니다.',
-            prompt: '1883 포트에서 리스닝하는 고동시성 TCP 서버 파이프라인을 생성하세요. 원시 바이트코드 텔레메트리 스트림을 파싱하고, 지능형 중복 제거 필터 스테이지를 적용한 뒤 즉시 카프카(Kafka) 클러스터 브로커로 팬아웃(Fan-out)하세요.'
+            prompt: '1883 포트에서 리스닝하는 고동시성 TCP 서버 파이프라인을 생성하세요. 원시 바이트코드 텔레메트리 스트림을 파싱하고, 지능형 중복 제거 필터 스테이지를 적용한 뒤 즉시 HTTP 업스트림 엔드포인트로 팬아웃(Fan-out)하세요.'
           },
           {
             id: 'e-commerce',
@@ -60,7 +59,7 @@ export const useTranslations = () => {
             icon: 'ph:shopping-cart-duotone',
             title: 'Spike Traffic Buffer',
             desc: '대규모 결제 플래시 세일을 위한 비동기 백프레셔(Backpressure) 큐 컨트롤러입니다.',
-            prompt: '8080 포트에서 주문 결제 요청을 처리할 HTTP 인그레스 풀을 구성하세요. 다운스트림 데이터베이스 쓰기 속도를 조절하기 위해 SEDA 스테이징 메모리 버퍼를 통합하고, Redis를 활용한 비동기 백프레셔 정책을 강제하세요.'
+            prompt: '8080 포트에서 주문 결제 요청을 처리할 HTTP 인그레스 풀을 구성하세요. 다운스트림 데이터베이스 쓰기 속도를 조절하기 위해 SEDA 스테이징 메모리 버퍼를 통합하고, 내장 메모리 큐를 활용한 비동기 백프레셔 정책을 강제하세요.'
           },
           {
             id: 'gaming',
@@ -68,7 +67,7 @@ export const useTranslations = () => {
             icon: 'ph:game-controller-duotone',
             title: 'Live Telemetry Splitter',
             desc: '유저 상태 및 수익화 로그 추적을 위한 동적 실시간 라우팅 엔진입니다.',
-            prompt: '웹소켓을 통해 글로벌 플레이어 활동 이벤트를 수집하세요. SpEL 표현식을 사용해 페이로드 콘텐츠를 동적으로 평가하고, 트랜잭션 이벤트 패킷은 JDBC 데이터 웨어하우스로, 진단 로그는 Redis 풀로 라우팅하세요.'
+            prompt: '웹소켓을 통해 글로벌 플레이어 활동 이벤트를 수집하세요. SpEL 표현식을 사용해 페이로드 콘텐츠를 동적으로 평가하고, 트랜잭션 이벤트 패킷은 JDBC 데이터 웨어하우스로, 진단 로그는 HTTP 웹훅 엔드포인트로 라우팅하세요.'
           }
         ]
       },
@@ -90,7 +89,7 @@ export const useTranslations = () => {
       nav: { opensource: 'GitHub', console: 'Console' },
       hero: {
         badge: 'Zefio Engine 0.9.0 - Public Beta',
-        title1: 'High-Throughput Streaming,', 
+        title1: 'High-Throughput Streaming,',
         title2: 'Intelligent Event Mesh',
         subtitle: 'From AI model routing to massive IoT ingestion. The high-performance SEDA engine and AI Control Plane orchestrate all your traffic.',
         btnCompare: 'Get Started',
@@ -132,7 +131,7 @@ export const useTranslations = () => {
             icon: 'ph:cpu-duotone',
             title: 'Edge Stream Collector',
             desc: 'High-throughput TCP pipeline designed for raw MQTT/sensor telemetry ingestion.',
-            prompt: 'Create a high-concurrency TCP server pipeline listening on Port 1883. Parse raw bytecode telemetry streams, apply an intelligent deduplication filter stage, and immediately fan-out to a Kafka cluster broker.'
+            prompt: 'Create a high-concurrency TCP server pipeline listening on Port 1883. Parse raw bytecode telemetry streams, apply an intelligent deduplication filter stage, and immediately fan-out to an HTTP upstream endpoint.'
           },
           {
             id: 'e-commerce',
@@ -140,7 +139,7 @@ export const useTranslations = () => {
             icon: 'ph:shopping-cart-duotone',
             title: 'Spike Traffic Buffer',
             desc: 'Asynchronous backpressure queue controller for mass checkout flash sales.',
-            prompt: 'Build an HTTP ingress pool for order checkout requests on Port 8080. Integrate a SEDA staging memory buffer to throttle downstream database writes via Redis, enforcing an asynchronous backpressure policy.'
+            prompt: 'Build an HTTP ingress pool for order checkout requests on Port 8080. Integrate a SEDA staging memory buffer to throttle downstream database writes via internal memory buffers, enforcing an asynchronous backpressure policy.'
           },
           {
             id: 'gaming',
@@ -148,7 +147,7 @@ export const useTranslations = () => {
             icon: 'ph:game-controller-duotone',
             title: 'Live Telemetry Splitter',
             desc: 'Dynamic real-time routing engine for tracking user state and monetization logs.',
-            prompt: 'Ingest global player activity events via WebSockets. Dynamically evaluate payload contents using SpEL expressions: route transactional event packets to JDBC data warehouses and diagnostic logs to a Redis pool.'
+            prompt: 'Ingest global player activity events via WebSockets. Dynamically evaluate payload contents using SpEL expressions: route transactional event packets to JDBC data warehouses and diagnostic logs to an HTTP webhook endpoint.'
           }
         ]
       },

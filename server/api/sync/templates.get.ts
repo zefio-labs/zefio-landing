@@ -1,4 +1,3 @@
-// server/api/sync/templates.get.ts
 import { defineEventHandler } from 'h3'
 import { useStorage } from '#imports'
 
@@ -8,7 +7,7 @@ import { useStorage } from '#imports'
 export default defineEventHandler(async (event) => {
   try {
     const storage = useStorage('db')
-    
+
     // Fetch from Nitro Storage
     const registry = await storage.getItem('zefio:registry:master')
     const globals = await storage.getItem('zefio:topology:globals')
@@ -16,7 +15,8 @@ export default defineEventHandler(async (event) => {
     if (!registry || !globals) {
       return {
         status: 404,
-        message: 'No templates found. Ensure Zefio Engine (DP) is running and has completed the Bootstrap Handshake.',
+        // 메시지 수정: DP의 Handshake가 아니라 시스템 Sync를 호출하라는 의미로 변경
+        message: 'No templates found. Please trigger a System Sync to pull metadata from DP.',
         data: null
       }
     }

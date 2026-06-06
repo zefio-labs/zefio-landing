@@ -100,9 +100,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useTranslations } from '@/composables/useTranslations' // 실제 경로에 맞게 수정해주세요
+import { useTranslations } from '@/composables/useTranslations'
 
-// i18n Composable 호출
 const { t } = useTranslations()
 
 const emit = defineEmits(['deploy-success'])
@@ -116,8 +115,6 @@ const isDeploying = ref(false)
 // Sync State Management
 const isSyncing = ref(false)
 const syncStatus = ref<'idle' | 'success' | 'error'>('success')
-
-// 하드코딩된 industryPresets 배열 삭제됨 (t.architect.presets로 대체)
 
 // Handlers
 const selectPreset = (prompt: string) => {
@@ -202,7 +199,6 @@ const deployYaml = async () => {
 </script>
 
 <style scoped>
-/* 기존 스타일 유지 */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 

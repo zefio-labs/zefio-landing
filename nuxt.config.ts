@@ -1,4 +1,6 @@
 // nuxt.config.ts
+import { resolve } from 'path'
+
 export default defineNuxtConfig({
   devtools: { enabled: true },
 
@@ -49,6 +51,12 @@ export default defineNuxtConfig({
     experimental: {
       websocket: true // Core setting for real-time DP communication
     },
+    serverAssets: [
+      {
+        baseName: 'dsl',          // virtual namespace
+        dir: resolve(__dirname, './server/dsl')  // path
+      }
+    ],
     // Server-side storage for caching DP schemas and topologies
     storage: {
       db: {

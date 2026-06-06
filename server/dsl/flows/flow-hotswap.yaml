@@ -1,0 +1,63 @@
+flows:
+  - name: inbound
+    label: "9_HTTP_TO_HTTP_Massive"
+    options:
+      threadPool:
+        corePoolSize: 200
+        maxPoolSize: 400
+        queueCapacity: 0
+        autoScaling:
+          enabled: true
+          threshold: 0.7
+          checkInterval: 5
+          scaleUpStep: 30
+          scaleDownStep: 10
+      cpuQueue:
+        capacity: 50000
+      ioQueue:
+        capacity: 20000
+
+    # 🎯 Ingress: Synchronous (Sync)
+    ingress:
+      name: from
+      label: "HTTP Inbound (51009)"
+      type: HttpIngress
+      telegram: fixed-standard
+      profile: ingress-sync-alt
+      exchangePattern: RequestReply
+      config:
+        port: 51009
+        requestEncoding: utf-8
+        responseEncoding: utf-8
+        # 🚀 [Business-Specific] Inbound response Content-Type
+        responseContentType: text/plain
+
+    # 🎯 Upstream: Synchronous (Sync) HTTP 1,000 Pool
+    steps:
+      - name: to
+        label: "Target Request (HTTP_Massive)"
+        type: HttpUpstream
+        telegram: fixed-standard
+        profile: upstream-sync-transient
+        exchangePattern: RequestReply
+        retry:
+          enabled: false
+        config:
+          host: localhost
+          port: 51109
+          # 🚀 [Business Routing] HTTP outbound specific settings
+          requestContentType: text/plain
+          requestHttpMethod: POST
+          requestPath: service/
+          requestEncoding: utf-8
+          responseEncoding: utf-8
+    on-error:
+      - error-type: ANY
+        steps:
+          - name: central-fixed-error
+            type: FixedFaultHandler
+            label: "Common Error Handling"
+            config:
+              errorCodeRules: [ ]
+              valueOverrides: [ ]
+              messageRule: null

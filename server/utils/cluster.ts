@@ -14,7 +14,7 @@ export const uiPeers = new Set<any>()
 export async function broadcastToCluster(commandObj: any): Promise<number> {
   const messageStr = JSON.stringify(commandObj)
   try {
-    await redisPub.publish('zefio:commands:broadcast', messageStr)
+    await redisPub.publish('zefio:commands', messageStr)
     console.log(`[Zefio CP] Broadcasted command '${commandObj.action}' to Redis.`)
     return clusterNodes.size // Returns the estimated number of nodes receiving the hot-reload
   } catch (err) {
