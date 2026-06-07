@@ -71,25 +71,25 @@ export async function compileAndDeployFlows() {
       console.log(`\n================================================================`);
       console.log(`[Zefio CP] 🛠️ [Full Flow Definition] Name: ${flow.name}`);
       console.log(`================================================================`);
-      console.log(JSON.stringify(uiFlowContext, null, 2)); 
-      console.log(`================================================================\n`);
+      // console.log(JSON.stringify(uiFlowContext, null, 2)); 
+      // console.log(`================================================================\n`);
       
       // Cache the enriched flow layout locally for active UI and AI consumption
       await storage.setItem(`zefio:flow:${flow.name}`, uiFlowContext)
 
       // Broadcast clean hot-reload payload to cluster core
-      const bootstrapDeployPayload = {
-        targetGroup: "main",
-        action: "hot-reload",
-        deployId: `BOOTSTRAP-INIT-${flow.name.toUpperCase()}`,
-        payload: { 
-            flowsYaml: compiledFlowYamlStr,        // 💡 Pristine, beautiful clean flow definition string
-            telegrams: mergedGlobals.telegrams    // 💡 Transmitted as a clean, native JSON object tree mapping next to it
-        }
-      }
+      // const bootstrapDeployPayload = {
+      //   targetGroup: "main",
+      //   action: "hot-reload",
+      //   deployId: `BOOTSTRAP-INIT-${flow.name.toUpperCase()}`,
+      //   payload: { 
+      //       flowsYaml: compiledFlowYamlStr,        // 💡 Pristine, beautiful clean flow definition string
+      //       telegrams: mergedGlobals.telegrams    // 💡 Transmitted as a clean, native JSON object tree mapping next to it
+      //   }
+      // }
       
-      await redisPub.publish('zefio:command', JSON.stringify(bootstrapDeployPayload))
-      console.log(`  > [Auto-Deploy] Pipeline '${flow.name}' deployed successfully.`)
+      // await redisPub.publish('zefio:command', JSON.stringify(bootstrapDeployPayload))
+      // console.log(`  > [Auto-Deploy] Pipeline '${flow.name}' deployed successfully.`)
     }
   }
 

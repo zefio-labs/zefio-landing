@@ -140,7 +140,7 @@ flows:
       telegram: fixed-http-req
       exchangePattern: RequestReply
     steps:
-      - name: call-global-xml
+      - name: switch-call-global-xml
         label: "Call Global XML Endpoint"
         type: SpELRouterInterceptor
         config:
@@ -160,7 +160,7 @@ flows:
       telegram: fixed-http-req
       exchangePattern: RequestReply
     steps:
-      - name: call-global-json
+      - name: switch-call-global-json
         label: "Call Global JSON Endpoint"
         type: SpELRouterInterceptor
         config:
